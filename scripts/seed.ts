@@ -110,6 +110,7 @@ if (!employee || !manager || !hr || !department || !position) {
   });
 
 
+
   // ------------------------------
   // Step 2: Create Dummy Attendance Logs
   // ------------------------------
@@ -342,7 +343,7 @@ const OvertimeExceptionReport = await OvertimeExceptionReportModel.create({
   employeeId: new mongoose.Types.ObjectId(),
   date: new Date('2025-11-15T00:00:00Z'),
   hoursWorked: 12,
-  approvedBy: hr.hrManagerId,
+  approvedBy: HRManager,
   exceptionFlag: true,
   remarks: "Critical project deadline",
   createdAt: new Date('2025-11-18T11:00:00Z'),
