@@ -1,6 +1,6 @@
 // vacation-package-link.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document, Types, model } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class VacationPackageLink extends Document {
@@ -21,3 +21,4 @@ export class VacationPackageLink extends Document {
 }
 
 export const VacationPackageLinkSchema = SchemaFactory.createForClass(VacationPackageLink);
+export const VacationPackageLinkModel = model<VacationPackageLink>('VacationPackageLink', VacationPackageLinkSchema);

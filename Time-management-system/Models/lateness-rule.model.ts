@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, model } from 'mongoose';
+import { Document } from 'mongoose';
 
 export type LatenessRuleDocument = LatenessRule & Document;
 
@@ -22,4 +22,3 @@ export class LatenessRule {
 }
 
 export const LatenessRuleSchema = SchemaFactory.createForClass(LatenessRule);
-export const LatenessRuleModel = model<LatenessRule>('LatenessRule', LatenessRuleSchema);

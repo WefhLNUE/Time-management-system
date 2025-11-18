@@ -1,6 +1,6 @@
 // custom-scheduling-rule.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, model } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class CustomSchedulingRule extends Document {
@@ -21,3 +21,4 @@ export class CustomSchedulingRule extends Document {
 }
 
 export const CustomSchedulingRuleSchema = SchemaFactory.createForClass(CustomSchedulingRule);
+export const CustomSchedulingRuleModel = model<CustomSchedulingRule>('CustomSchedulingRule', CustomSchedulingRuleSchema);

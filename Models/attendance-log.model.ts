@@ -1,7 +1,16 @@
+import mongoose from 'mongoose'
 import { Schema, Document, Types, model } from 'mongoose';
 export interface AttendanceLog extends Document {
-  employeeId: string;
-  shiftAssignmentId: Types.ObjectId;
+  employeeId: {
+    type: Types.ObjectId,
+    ref: 'Employee', // Replace with your actual Employee model name
+    required: true,
+  },
+  shiftAssignmentId: {
+    type: Types.ObjectId,
+    ref: 'ShiftAssignment', // Replace with your actual ShiftAssignment model name
+    required: true, // optional if not required
+  },
   clockIn: Date;
   clockOut?: Date;
   attendanceStatus: 'Present' | 'Absent' | 'Late' | 'MissedPunch';

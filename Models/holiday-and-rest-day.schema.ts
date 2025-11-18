@@ -1,6 +1,6 @@
 // holiday-and-rest-day.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, model } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class HolidayAndRestDay extends Document {
@@ -18,3 +18,4 @@ export class HolidayAndRestDay extends Document {
 }
 
 export const HolidayAndRestDaySchema = SchemaFactory.createForClass(HolidayAndRestDay);
+export const HolidayAndRestDayModel = model<HolidayAndRestDay>('HolidayAndRestDay', HolidayAndRestDaySchema);

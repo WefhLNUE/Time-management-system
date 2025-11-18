@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types, model } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type AttendanceCorrectionRequestDocument = AttendanceCorrectionRequest & Document;
 
@@ -25,4 +25,3 @@ export class AttendanceCorrectionRequest {
 }
 
 export const AttendanceCorrectionRequestSchema = SchemaFactory.createForClass(AttendanceCorrectionRequest);
-export const AttendanceCorrectionRequestModel = model<AttendanceCorrectionRequest>('AttendanceCorrectionRequest', AttendanceCorrectionRequestSchema);

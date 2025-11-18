@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types, model } from 'mongoose'; //ha2ool le youssef
+import { Document, Types } from 'mongoose';
 
 export type LeaveSyncIntegrationDocument = LeaveSyncIntegration & Document;
 
@@ -19,6 +19,3 @@ export class LeaveSyncIntegration {
 }
 
 export const LeaveSyncIntegrationSchema = SchemaFactory.createForClass(LeaveSyncIntegration);
-
-// After
-export const LeaveSyncIntegrationModel = model<LeaveSyncIntegration>('LeaveSyncIntegration', LeaveSyncIntegrationSchema);

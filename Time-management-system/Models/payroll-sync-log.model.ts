@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, model } from 'mongoose';
+import { Document } from 'mongoose';
 
 export type PayrollSyncLogDocument = PayrollSyncLog & Document;
 
@@ -22,4 +22,3 @@ export class PayrollSyncLog {
 }
 
 export const PayrollSyncLogSchema = SchemaFactory.createForClass(PayrollSyncLog);
-export const PayrollSyncLogModel = model<PayrollSyncLog>('PayrollSyncLog', PayrollSyncLogSchema);

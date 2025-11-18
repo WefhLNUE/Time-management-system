@@ -1,6 +1,6 @@
 // shift-type.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, model } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class ShiftType extends Document {
@@ -25,3 +25,4 @@ export class ShiftType extends Document {
 
 
 export const ShiftTypeSchema = SchemaFactory.createForClass(ShiftType);
+export const ShiftTypeModel = model<ShiftType>('ShiftType', ShiftTypeSchema);

@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, model } from 'mongoose';
+import { Document } from 'mongoose';
 
 export type OvertimeRuleDocument = OvertimeRule & Document;
 
@@ -28,5 +28,3 @@ export class OvertimeRule {
 }
 
 export const OvertimeRuleSchema = SchemaFactory.createForClass(OvertimeRule);
-
-export const OvertimeRuleModel = model<OvertimeRule>('OvertimeRule', OvertimeRuleSchema);

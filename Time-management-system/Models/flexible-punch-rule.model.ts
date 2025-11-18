@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, model } from 'mongoose';
+import { Document } from 'mongoose';
 
 export type FlexiblePunchRuleDocument = FlexiblePunchRule & Document;
 
@@ -19,5 +19,4 @@ export class FlexiblePunchRule {
 }
 
 export const FlexiblePunchRuleSchema = SchemaFactory.createForClass(FlexiblePunchRule);
-export const FlexiblePunchRuleModel = model<FlexiblePunchRule>('FlexiblePunchRule', FlexiblePunchRuleSchema);
 

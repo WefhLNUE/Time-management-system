@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types, model } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type AuditTrailDocument = AuditTrail & Document;
 
@@ -25,4 +25,3 @@ export class AuditTrail {
 }
 
 export const AuditTrailSchema = SchemaFactory.createForClass(AuditTrail);
-export const AuditTrailModel = model<AuditTrail>('AuditTrail', AuditTrailSchema);

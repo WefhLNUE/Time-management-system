@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types, model } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type TimeExceptionRequestDocument = TimeExceptionRequest & Document;
 
@@ -28,4 +28,3 @@ export class TimeExceptionRequest {
 }
 
 export const TimeExceptionRequestSchema = SchemaFactory.createForClass(TimeExceptionRequest);
-export const TimeExceptionRequestModel = model<TimeExceptionRequest>('TimeExceptionRequest', TimeExceptionRequestSchema);
