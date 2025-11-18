@@ -27,8 +27,8 @@ import { DepartmentSchema } from "../../employee-profile-new/organizational-stru
 import { PositionSchema } from "../../employee-profile-new/organizational-structure/models/position.schema";
 import { DepartmentManagerSchema } from "../../employee-profile-new/employee-profile/models/departmentManager.schema";
 import { HRManagerSchema } from "../../employee-profile-new/employee-profile/models/hrmanager.schema";
-import { LeaveBalanceSchema } from 'leaves-subsystem/Models/leave-balance.schema';
-import { LeaveRequestSchema } from 'leaves-subsystem/Models/leave-request.schema';
+import { LeaveBalanceSchema } from '../../leaves-subsystem/Models/leave-balance.schema';
+import { LeaveRequestSchema } from '../../leaves-subsystem/Models/leave-request.schema';
 //
 
 async function main() {
@@ -109,15 +109,6 @@ if (!employee || !manager || !hr || !department || !position) {
     updatedAt: new Date(),
   });
 
-  const shift2 = await ShiftAssignmentModel.create({
-    _id: new mongoose.Types.ObjectId(),
-    employeeId: 'EMP002',
-    shiftType: 'Night',
-    startDate: new Date('2025-11-05T22:00:00Z'),
-    status: 'Pending',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
 
   // ------------------------------
   // Step 2: Create Dummy Attendance Logs
@@ -351,7 +342,7 @@ const OvertimeExceptionReport = await OvertimeExceptionReportModel.create({
   employeeId: new mongoose.Types.ObjectId(),
   date: new Date('2025-11-15T00:00:00Z'),
   hoursWorked: 12,
-  approvedBy: HRManager,
+  approvedBy: hr.hrManagerId,
   exceptionFlag: true,
   remarks: "Critical project deadline",
   createdAt: new Date('2025-11-18T11:00:00Z'),
