@@ -14,7 +14,7 @@ import { AttendanceCorrectionRequestModel } from "../Models/attendance-correctio
 import { AuditTrailModel } from "../Models/audit-trail.model";
 import { FlexiblePunchRuleModel } from "../Models/flexible-punch-rule.model";
 import { LatenessRuleModel } from "../Models/lateness-rule.model";
-import mongooseModule from 'mongoose'
+
 //
 
 async function main() {
