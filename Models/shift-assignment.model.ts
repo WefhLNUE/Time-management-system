@@ -1,8 +1,19 @@
+import mongoose from 'mongoose';
 import { Schema, Document, Types, model } from 'mongoose';
 export interface ShiftAssignment extends Document {
-  employeeId: string;
-  departmentId?: string;
-  positionId?: string;
+ employeeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee', // Name of the referenced collection/model
+    required: true,
+  },
+  departmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department', // Name of the referenced collection/model
+  },
+  positionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Position', // Name of the referenced collection/model
+  },
   shiftType: string;
   startDate: Date;
   endDate?: Date;
@@ -11,9 +22,19 @@ export interface ShiftAssignment extends Document {
   updatedAt: Date;
 }
 const ShiftAssignmentSchema = new Schema<ShiftAssignment>({
-  employeeId: { type: String, required: true },
-  departmentId: { type: String },
-  positionId: { type: String },
+employeeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee', // Name of the referenced collection/model
+    required: true,
+  },
+  departmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department', // Name of the referenced collection/model
+  },
+  positionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Position', // Name of the referenced collection/model
+  },
   shiftType: { type: String, required: true },
   startDate: { type: Date, required: true },
   endDate: { type: Date },

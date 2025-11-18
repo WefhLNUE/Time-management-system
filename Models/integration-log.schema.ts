@@ -1,6 +1,6 @@
 // integration-log.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, model } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class IntegrationLog extends Document {
@@ -24,3 +24,4 @@ export class IntegrationLog extends Document {
 }
 
 export const IntegrationLogSchema = SchemaFactory.createForClass(IntegrationLog);
+export const IntegrationLogModel = model<IntegrationLog>('IntegrationLog', IntegrationLogSchema);

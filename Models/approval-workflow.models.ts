@@ -8,8 +8,8 @@ export class ApprovalWorkflow {
   @Prop({ type: Types.ObjectId, ref: 'TimeExceptionRequest', required: true })
   requestId!: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  approverId!: Types.ObjectId;
+  @Prop({ required: true })
+  approverId!: string;
 
   @Prop({ type: String, enum: ['approved', 'rejected', 'escalated'], required: true })
   action!: 'approved' | 'rejected' | 'escalated';

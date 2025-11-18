@@ -1,6 +1,6 @@
 // overtime-exception-report.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document, Types, model } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class OvertimeExceptionReport extends Document {
@@ -24,3 +24,4 @@ export class OvertimeExceptionReport extends Document {
 }
 
 export const OvertimeExceptionReportSchema = SchemaFactory.createForClass(OvertimeExceptionReport);
+export const OvertimeExceptionReportModel = model<OvertimeExceptionReport>('OvertimeExceptionReport', OvertimeExceptionReportSchema);

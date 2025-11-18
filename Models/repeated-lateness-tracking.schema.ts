@@ -1,6 +1,6 @@
 // repeated-lateness-tracking.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document, Types, model } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class RepeatedLatenessTracking extends Document {
@@ -21,3 +21,4 @@ export class RepeatedLatenessTracking extends Document {
 }
 
 export const RepeatedLatenessTrackingSchema = SchemaFactory.createForClass(RepeatedLatenessTracking);
+export const RepeatedLatenessTrackingModel = model<RepeatedLatenessTracking>('RepeatedLatenessTracking', RepeatedLatenessTrackingSchema);
