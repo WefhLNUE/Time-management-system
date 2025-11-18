@@ -15,7 +15,7 @@ import { AuditTrailModel } from "../Models/audit-trail.model";
 import { FlexiblePunchRuleModel } from "../Models/flexible-punch-rule.model";
 import { LatenessRuleModel } from "../Models/lateness-rule.model";
 import mongooseModule from 'mongoose'
-
+//
 
 async function main() {
   await mongoose.connect(
@@ -258,7 +258,7 @@ await TimeExceptionRequestModel.create({
     isActive: true,
   });
 
-  
+
 
   console.log('Dummy data inserted successfully!');
   process.exit(0);
