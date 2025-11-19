@@ -19,7 +19,7 @@ export interface ShiftAssignment extends Document {
   endDate?: Date;
   status: 'Approved' | 'Cancelled' | 'Expired' | 'Pending';
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt: Date;////////////////////////
 }
 const ShiftAssignmentSchema = new Schema<ShiftAssignment>({
 employeeId: {

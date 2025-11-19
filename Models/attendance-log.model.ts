@@ -9,7 +9,7 @@ export interface AttendanceLog extends Document {
   shiftAssignmentId: {
     type: Types.ObjectId,
     ref: 'ShiftAssignment', // Replace with your actual ShiftAssignment model name
-    required: true, // optional if not required
+    required: true, // optional if not requireddddd
   },
   clockIn: Date;
   clockOut?: Date;

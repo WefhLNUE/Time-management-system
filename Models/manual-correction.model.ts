@@ -20,5 +20,5 @@ const ManualCorrectionSchema = new Schema<ManualCorrection>({
   approvalStatus: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
-});
+});/////////////////////
 export const ManualCorrectionModel = model<ManualCorrection>('ManualCorrection', ManualCorrectionSchema);
