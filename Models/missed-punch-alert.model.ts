@@ -14,5 +14,5 @@ const MissedPunchAlertSchema = new Schema<MissedPunchAlert>({
   alertDate: { type: Date, default: Date.now },
   resolved: { type: Boolean, default: false },
   resolvedDate: { type: Date },
-});//////////////////////
+});
 export const MissedPunchAlertModel = model<MissedPunchAlert>('MissedPunchAlert', MissedPunchAlertSchema);

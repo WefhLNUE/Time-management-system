@@ -30,7 +30,7 @@ import { HRManagerSchema } from "../../employee-profile-new/employee-profile/mod
 import { LeaveBalanceSchema } from '../../leaves-subsystem/Models/leave-balance.schema';
 import { LeaveRequestSchema } from '../../leaves-subsystem/Models/leave-request.schema';
 //
-
+//i am hear
 async function main() {
   await mongoose.connect(
     'mongodb+srv://dareen:mVn7PHAnoLOJ6jSB@hrcuster.fqiw4vw.mongodb.net/test?retryWrites=true&w=majority'
@@ -343,7 +343,7 @@ const OvertimeExceptionReport = await OvertimeExceptionReportModel.create({
   employeeId: new mongoose.Types.ObjectId(),
   date: new Date('2025-11-15T00:00:00Z'),
   hoursWorked: 12,
-  approvedBy: HRManager,
+  approvedBy: hr.hrManagerId,
   exceptionFlag: true,
   remarks: "Critical project deadline",
   createdAt: new Date('2025-11-18T11:00:00Z'),
