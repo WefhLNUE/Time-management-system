@@ -1,28 +1,16 @@
-// shift-type.schema.ts
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, model } from 'mongoose';
+import { Schema, Prop, SchemaFactory } from "@nestjs/mongoose";
 
-@Schema({ timestamps: true })
-export class ShiftType extends Document {
-  @Prop({ required: true })
-  name: string; // e.g. "Normal", "Night", "Split", "Rotational"
+import { HydratedDocument } from "mongoose";
 
-  @Prop({ required: true })
-  startTime: string; // "09:00"
+export type ShiftTypeDocument = HydratedDocument<ShiftType>;
 
-  @Prop({ required: true })
-  endTime: string; // "17:00"
+@Schema()
+export class ShiftType {
+    @Prop({required: true})
+    name: string 
 
-  @Prop({ default: 0 })
-  gracePeriodMinutes: number;
-
-  @Prop({ default: false })
-  isRotational: boolean;
-
-  @Prop({ type: [String], default: [] })
-  applicableDepartments: string[];
+    @Prop({default: true})
+    active: boolean;
 }
 
-
 export const ShiftTypeSchema = SchemaFactory.createForClass(ShiftType);
-export const ShiftTypeModel = model<ShiftType>('ShiftType', ShiftTypeSchema);
