@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
-import { ShiftTypeSchema } from './models/shift-type.schema';
-import { ShiftSchema } from './models/shift.schema';
-import { HolidaySchema } from './models/holiday.schema';
-import { latenessRuleSchema } from './models/lateness-rule.schema';
-import { OvertimeRuleSchema } from './models/overtime-rule.schema';
-import { ScheduleRuleSchema } from './models/schedule-rule.schema';
-import { ShiftAssignmentSchema } from './models/shift-assignment.schema';
-import { PunchPolicy, HolidayType, ShiftAssignmentStatus } from './models/enums/index';
+import { ShiftTypeSchema } from './Models/shift-type.schema';
+import { ShiftSchema } from './Models/shift.schema';
+import { HolidaySchema } from './Models/holiday.schema';
+import { latenessRuleSchema } from './Models/lateness-rule.schema';
+import { OvertimeRuleSchema } from './Models/overtime-rule.schema';
+import { ScheduleRuleSchema } from './Models/schedule-rule.schema';
+import { ShiftAssignmentSchema } from './Models/shift-assignment.schema';
+import { PunchPolicy, HolidayType, ShiftAssignmentStatus } from './Models/enums/index';
 
 export async function seedTimeManagement(connection: mongoose.Connection, employees: any, departments: any, positions: any) {
   const ShiftTypeModel = connection.model('ShiftType', ShiftTypeSchema);
