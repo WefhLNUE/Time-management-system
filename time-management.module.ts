@@ -36,7 +36,6 @@ import { TimeManagementController } from './time-management.controller';
 import { TimeManagementService } from './time-management.service';
 
 
-
 @Module({
   imports: [
     ScheduleModule.forRoot(),
