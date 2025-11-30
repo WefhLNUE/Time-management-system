@@ -2,7 +2,9 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 
-// Models
+// ---------------------
+// M1 Models
+// ---------------------
 import { NotificationLog, NotificationLogSchema } from './Models/notification-log.schema';
 import { AttendanceCorrectionRequest, AttendanceCorrectionRequestSchema } from './Models/attendance-correction-request.schema';
 import { ShiftType, ShiftTypeSchema } from './Models/shift-type.schema';
@@ -15,26 +17,45 @@ import { ShiftAssignment, ShiftAssignmentSchema } from './Models/shift-assignmen
 import { LatenessRule, latenessRuleSchema } from './Models/lateness-rule.schema';
 import { Holiday, HolidaySchema } from './Models/holiday.schema';
 
-// Controllers
+// ---------------------
+// Main Controllers (A+B)
+// ---------------------
 import { ShiftTypeController } from './controllers/shift-type.controller';
 import { ShiftController } from './controllers/shift.controller';
 import { ScheduleRuleController } from './controllers/schedule-rule.controller';
 import { ShiftAssignmentController } from './controllers/shift-assignment.controller';
 
-// Services
+// Optional
+import { TimeManagementController } from './time-management.controller';
+
+// ---------------------
+// Part C Controllers
+// ---------------------
+import { ExceptionsController } from './controllers/exceptions.controller';
+import { HolidaysController } from './controllers/holidays.controller';
+import { ReportingController } from './controllers/reporting.controller';
+
+// ---------------------
+// Main Services (A+B)
+// ---------------------
 import { ShiftTypeService } from './services/shift-type.service';
 import { ShiftService } from './services/shift.service';
 import { ScheduleRuleService } from './services/schedule-rule.service';
 import { ShiftAssignmentService } from './services/shift-assignment.service';
 import { NotificationService } from './services/notification.service';
 
-// Cron Job
 import { ShiftExpiryCron } from './cron/shift-expiry.cron';
 
-// (Optional default controller/service)
-import { TimeManagementController } from './time-management.controller';
+// Optional
 import { TimeManagementService } from './time-management.service';
 
+// ---------------------
+// Part C Services
+// ---------------------
+import { ExceptionsService } from './services/exceptions.service';
+import { HolidaysService } from './services/holidays.service';
+import { ReportingService } from './services/reporting.service';
+import { IntegrationService } from './services/integration.service';
 
 @Module({
   imports: [
@@ -56,18 +77,23 @@ import { TimeManagementService } from './time-management.service';
   ],
 
   controllers: [
-    // new controllers
+    // A+B controllers
     ShiftTypeController,
     ShiftController,
     ScheduleRuleController,
     ShiftAssignmentController,
 
-    // optional older controller
+    // Part C controllers
+    ExceptionsController,
+    HolidaysController,
+    ReportingController,
+
+    // Optional legacy
     TimeManagementController,
   ],
 
   providers: [
-    // new services
+    // A+B
     ShiftTypeService,
     ShiftService,
     ScheduleRuleService,
@@ -75,8 +101,21 @@ import { TimeManagementService } from './time-management.service';
     NotificationService,
     ShiftExpiryCron,
 
-    // optional older service
+    // C
+    ExceptionsService,
+    HolidaysService,
+    ReportingService,
+    IntegrationService,
+
+    // Optional legacy
     TimeManagementService,
+  ],
+
+  exports: [
+    ExceptionsService,
+    HolidaysService,
+    ReportingService,
+    IntegrationService,
   ],
 })
 export class TimeManagementModule {}
