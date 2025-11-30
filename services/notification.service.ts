@@ -5,9 +5,19 @@ import { Model } from 'mongoose';
 
 @Injectable()
 export class NotificationService {
-  constructor(@InjectModel('NotificationLog') private readonly model: Model<NotificationLogDocument>) {}
+  constructor(
+    @InjectModel('NotificationLog')
+    private readonly model: Model<NotificationLogDocument>,
+  ) {}
 
-  async createNotification(to: string | null, message: string) {
-    return this.model.create({ to: to ? to : null, type: 'SYSTEM', message });
+  async createNotification(
+    to: Record<string, any> | null,   //3lshan t2bal null or object
+    message: string,
+  ) {
+    return this.model.create({
+      to: to ?? null,
+      type: 'SYSTEM',
+      message,
+    });
   }
 }
