@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { CreateExceptionDto, TimeExceptionType } from '../dto/create-exception.dto';
+import { CreateExceptionDto } from '../dto/create-exception.dto';
 import { UpdateExceptionStatusDto, TimeExceptionStatus } from '../dto/update-exception-status.dto';
 
 @Injectable()
