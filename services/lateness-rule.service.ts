@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { LatenessRule } from '../models/lateness-rule.schema';
-import { CreateLatenessRuleDto } from '../dto/lateness-rule/create-lateness-rule.dto';
-import { UpdateLatenessRuleDto } from '../dto/lateness-rule/update-lateness-rule.dto';
+import { LatenessRule } from '../Models/lateness-rule.schema';
+import { CreateLatenessRuleDto } from '../dto/create-lateness-rule.dto';
+import { UpdateLatenessRuleDto } from '../dto/update-lateness-rule.dto';
 
 @Injectable()
 export class LatenessRuleService {
