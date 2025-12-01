@@ -8,8 +8,8 @@ import {
   Param,
 } from '@nestjs/common';
 import { OvertimeRuleService } from '../services/overtime-rule.service';
-import { CreateOvertimeRuleDto } from '../dto/overtime-rule/create-overtime-rule.dto';
-import { UpdateOvertimeRuleDto } from '../dto/overtime-rule/update-overtime-rule.dto';
+import { CreateOvertimeRuleDto } from '../dto/create-overtime-rule.dto';
+import { UpdateOvertimeRuleDto } from '../dto/update-overtime-rule.dto';
 
 @Controller('overtime-rules')
 export class OvertimeRuleController {

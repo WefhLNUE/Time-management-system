@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { OvertimeRule } from '../models/overtime-rule.schema';
-import { CreateOvertimeRuleDto } from '../dto/overtime-rule/create-overtime-rule.dto';
-import { UpdateOvertimeRuleDto } from '../dto/overtime-rule/update-overtime-rule.dto';
+import { OvertimeRule } from '../Models/overtime-rule.schema';
+import { CreateOvertimeRuleDto } from '../dto/create-overtime-rule.dto';
+import { UpdateOvertimeRuleDto } from '../dto/update-overtime-rule.dto';
 
 @Injectable()
 export class OvertimeRuleService {

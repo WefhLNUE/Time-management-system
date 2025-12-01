@@ -8,8 +8,8 @@ import {
   Param,
 } from '@nestjs/common';
 import { LatenessRuleService } from '../services/lateness-rule.service';
-import { CreateLatenessRuleDto } from '../dto/lateness-rule/create-lateness-rule.dto';
-import { UpdateLatenessRuleDto } from '../dto/lateness-rule/update-lateness-rule.dto';
+import { CreateLatenessRuleDto } from '../dto/create-lateness-rule.dto';
+import { UpdateLatenessRuleDto } from '../dto/update-lateness-rule.dto';
 
 @Controller('lateness-rules')
 export class LatenessRuleController {
