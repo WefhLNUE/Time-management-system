@@ -16,6 +16,7 @@ import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorator/roles.decorator';
+import { SystemRole } from 'src/employee-profile/enums/employee-profile.enums';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('time-management/exceptions')
@@ -23,14 +24,20 @@ export class ExceptionsController {
   constructor(private readonly svc: ExceptionsService) {}
 
   // Employees can create exceptions (permissions, corrections, overtime, etc.)
-  @Roles('EMPLOYEE')
+  
+  @Roles(SystemRole.DEPARTMENT_EMPLOYEE)
   @Post()
   async create(@Body() dto: CreateExceptionDto) {
     return this.svc.createException(dto);
   }
 
   // Managers + HR + System Admin can view lists
-  @Roles('HR_ADMIN', 'HR_MANAGER', 'LINE_MANAGER', 'SYSTEM_ADMIN')
+  
+  @Roles(SystemRole.HR_ADMIN,
+        SystemRole.HR_MANAGER,
+        SystemRole.DEPARTMENT_HEAD,
+        SystemRole.SYSTEM_ADMIN
+  )
   @Get()
   async list(
       @Query('status') status?: string,
@@ -44,7 +51,13 @@ export class ExceptionsController {
   }
 
   // Everyone involved can view a single exception, including the employee
-  @Roles('EMPLOYEE', 'HR_ADMIN', 'HR_MANAGER', 'LINE_MANAGER', 'SYSTEM_ADMIN')
+
+   @Roles(SystemRole.HR_ADMIN,
+        SystemRole.DEPARTMENT_EMPLOYEE,
+        SystemRole.HR_MANAGER,
+        SystemRole.DEPARTMENT_HEAD,
+        SystemRole.SYSTEM_ADMIN
+  )
   @Get(':id')
   async get(@Param('id') id: string) {
     const ex = await this.svc.findById(id);
@@ -53,7 +66,11 @@ export class ExceptionsController {
   }
 
   // Updating status is ONLY for approvers (Manager, HR, Admin)
-  @Roles('LINE_MANAGER', 'HR_ADMIN', 'SYSTEM_ADMIN')
+ 
+   @Roles(SystemRole.HR_ADMIN,
+        SystemRole.DEPARTMENT_HEAD,
+        SystemRole.SYSTEM_ADMIN
+  )
   @Put(':id/status')
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateExceptionStatusDto) {
     try {

@@ -6,6 +6,7 @@ import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorator/roles.decorator';
+import { SystemRole } from 'src/employee-profile/enums/employee-profile.enums';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('shifts')
@@ -13,28 +14,46 @@ export class ShiftController {
   constructor(private readonly svc: ShiftService) {}
 
   // Only HR Manager, HR Admin, System Admin can create shifts
-  @Roles('HR_MANAGER', 'HR_ADMIN', 'SYSTEM_ADMIN')
+
+     @Roles(SystemRole.HR_ADMIN,
+        SystemRole.HR_MANAGER,
+        SystemRole.SYSTEM_ADMIN
+  )
   @Post()
   create(@Body() dto: CreateShiftDto) {
     return this.svc.create(dto);
   }
 
   // Everyone except employees? No — employees CAN view shift definitions.
-  @Roles('HR_MANAGER', 'HR_ADMIN', 'LINE_MANAGER', 'EMPLOYEE', 'SYSTEM_ADMIN')
+     @Roles(SystemRole.HR_ADMIN,
+        SystemRole.HR_MANAGER,
+        SystemRole.DEPARTMENT_EMPLOYEE,
+        SystemRole.DEPARTMENT_HEAD,
+        SystemRole.SYSTEM_ADMIN
+  )
   @Get()
   findAll() {
     return this.svc.findAll();
   }
 
   // Everyone can view a single shift
-  @Roles('HR_MANAGER', 'HR_ADMIN', 'LINE_MANAGER', 'EMPLOYEE', 'SYSTEM_ADMIN')
+     @Roles(SystemRole.HR_ADMIN,
+        SystemRole.HR_MANAGER,
+        SystemRole.DEPARTMENT_EMPLOYEE,
+        SystemRole.DEPARTMENT_HEAD,
+        SystemRole.SYSTEM_ADMIN
+  )
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.svc.findOne(id);
   }
 
   // Update shift → Only HR Manager, HR Admin, System Admin
-  @Roles('HR_MANAGER', 'HR_ADMIN', 'SYSTEM_ADMIN')
+
+     @Roles(SystemRole.HR_ADMIN,
+        SystemRole.HR_MANAGER,
+        SystemRole.SYSTEM_ADMIN
+  )
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateShiftDto) {
     return this.svc.update(id, dto);
