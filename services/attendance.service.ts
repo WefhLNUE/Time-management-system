@@ -1,15 +1,26 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 
 import { AttendanceRecord } from '../Models/attendance-record.schema';
 import { ShiftAssignment } from '../Models/shift-assignment.schema';
 import { Shift } from '../Models/shift.schema';
 import { LatenessRule } from '../Models/lateness-rule.schema';
+
 import { TimeExceptionType } from '../Models/enums/index';
 
-import { ExceptionsService } from '../services/exceptions.service'; // you already have this from Person C
+
+import { ExceptionsService } from '../services/exceptions.service';
+
 import { PunchDto } from '../dto/punch.dto';
+
+// ---------------------------
+import { EmployeeProfile } from '../../employee-profile/Models/employee-profile.schema';
+
+// ---------------------------
+import { Department } from '../../organization-structure/Models/department.schema';
+import { Position } from '../../organization-structure/Models/position.schema';
+
 
 @Injectable()
 export class AttendanceService {
@@ -18,7 +29,14 @@ export class AttendanceService {
     @InjectModel('ShiftAssignment') private readonly assignment: Model<ShiftAssignment>,
     @InjectModel('Shift') private readonly shiftModel: Model<Shift>,
     @InjectModel('LatenessRule') private readonly latenessModel: Model<LatenessRule>,
-    private readonly exceptionsSvc: ExceptionsService
+
+    // Person C dependency
+    private readonly exceptionsSvc: ExceptionsService,
+
+    // Injected external repos (you can use them later)
+    @InjectModel('Employee') private readonly employeeModel: Model<EmployeeProfile>,
+    @InjectModel('Department') private readonly deptModel: Model<Department>,
+    @InjectModel('Position') private readonly posModel: Model<Position>,
   ) {}
 
   async processPunch(dto: PunchDto) {
@@ -35,7 +53,7 @@ export class AttendanceService {
         day,
         totalWorkMinutes: 0,
         hasMissedPunch: false,
-        finalisedForPayroll: false
+        finalisedForPayroll: false,
       });
     }
 
@@ -43,7 +61,7 @@ export class AttendanceService {
     record.punches.push({ type: punchType, time: timestamp });
     await record.save();
 
-    // Validate sequence
+    // Validate sequence (IN/OUT alternating)
     if (!this.validateSequence(record.punches)) {
       record.hasMissedPunch = true;
       await record.save();
@@ -52,17 +70,17 @@ export class AttendanceService {
         employeeId,
         attendanceRecordId: record._id.toString(),
         type: TimeExceptionType.MISSED_PUNCH,
-        reason: 'Invalid punch sequence'
+        reason: 'Invalid punch sequence',
       });
 
       return { warning: 'MISSED_PUNCH exception created', record };
     }
 
-    // Get shift
+    // Get shift assignment for today
     const assignment = await this.assignment.findOne({
       employeeId,
       startDate: { $lte: day },
-      $or: [{ endDate: null }, { endDate: { $gte: day } }]
+      $or: [{ endDate: null }, { endDate: { $gte: day } }],
     });
 
     if (!assignment) return record;
@@ -75,7 +93,6 @@ export class AttendanceService {
     await this.applyLateness(record, shift, latenessRule, employeeId);
 
     await record.save();
-
     return record;
   }
 
@@ -115,8 +132,10 @@ export class AttendanceService {
         employeeId,
         attendanceRecordId: record._id.toString(),
         type: TimeExceptionType.LATE,
-        reason: `Late by ${minutesLate} minutes`
+        reason: `Late by ${minutesLate} minutes`,
       });
     }
   }
 }
+
+export default AttendanceService;

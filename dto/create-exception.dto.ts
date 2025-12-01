@@ -1,10 +1,7 @@
 import { IsNotEmpty, IsString, IsOptional, IsEnum } from 'class-validator';
 
-export enum TimeExceptionType {
-  CORRECTION = 'CORRECTION',
-  OVERTIME = 'OVERTIME',
-  PERMISSION = 'PERMISSION',
-}
+import { TimeExceptionType } from '../Models/enums';
+
 
 export class CreateExceptionDto {
   @IsNotEmpty()
