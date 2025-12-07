@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Param, Get, Body, UseGuards } from '@nestjs/common';
 import { AttendanceService } from '../services/attendance.service';
 import { PunchDto } from '../dto/punch.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
@@ -10,6 +10,11 @@ import { SystemRole } from 'src/employee-profile/enums/employee-profile.enums';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AttendanceController {
   constructor(private readonly svc: AttendanceService) {}
+
+  @Get(':employeeId')
+  findForEmployee(@Param('employeeId') employeeId: string) {
+    return this.svc.findForEmployee(employeeId);
+  }
 
   @Roles(SystemRole.HR_ADMIN)
   @Post('punch')

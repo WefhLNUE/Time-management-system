@@ -8,19 +8,14 @@ import { Shift } from '../Models/shift.schema';
 import { LatenessRule } from '../Models/lateness-rule.schema';
 
 import { TimeExceptionType } from '../Models/enums/index';
-
-
 import { ExceptionsService } from '../services/exceptions.service';
-
 import { PunchDto } from '../dto/punch.dto';
 
 // ---------------------------
 import { EmployeeProfile } from '../../employee-profile/Models/employee-profile.schema';
-
-// ---------------------------
 import { Department } from '../../organization-structure/Models/department.schema';
 import { Position } from '../../organization-structure/Models/position.schema';
-
+// ---------------------------
 
 @Injectable()
 export class AttendanceService {
@@ -33,11 +28,25 @@ export class AttendanceService {
     // Person C dependency
     private readonly exceptionsSvc: ExceptionsService,
 
-    // Injected external repos (you can use them later)
-    @InjectModel('Employee') private readonly employeeModel: Model<EmployeeProfile>,
-    @InjectModel('Department') private readonly deptModel: Model<Department>,
-    @InjectModel('Position') private readonly posModel: Model<Position>,
+    // Injected external repos (for later use)
+    @InjectModel(EmployeeProfile.name)
+    private readonly employeeModel: Model<EmployeeProfile>,
+
+    @InjectModel(Department.name)
+    private readonly deptModel: Model<Department>,
+
+    @InjectModel(Position.name)
+    private readonly posModel: Model<Position>,
+
   ) {}
+
+  // ✅ REQUIRED BY AttendanceController
+  async findForEmployee(employeeId: string) {
+    return this.attendance
+      .find({ employeeId })
+      .sort({ day: -1 })
+      .lean();
+  }
 
   async processPunch(dto: PunchDto) {
     const { employeeId, punchType, time } = dto;
@@ -61,22 +70,24 @@ export class AttendanceService {
     record.punches.push({ type: punchType, time: timestamp });
     await record.save();
 
-    // Validate sequence (IN/OUT alternating)
+    // Validate IN/OUT sequence
     if (!this.validateSequence(record.punches)) {
       record.hasMissedPunch = true;
       await record.save();
 
       await this.exceptionsSvc.createException({
-        employeeId,
-        attendanceRecordId: record._id.toString(),
-        type: TimeExceptionType.MISSED_PUNCH,
-        reason: 'Invalid punch sequence',
-      });
+  employeeId,
+  attendanceRecordId: record._id.toString(),
+  type: TimeExceptionType.MISSED_PUNCH,
+  reason: 'Invalid punch sequence',
+  assignedTo: employeeId // TEMP: self-assigned for testing
+});
+
 
       return { warning: 'MISSED_PUNCH exception created', record };
     }
 
-    // Get shift assignment for today
+    // Get shift assignment
     const assignment = await this.assignment.findOne({
       employeeId,
       startDate: { $lte: day },
@@ -126,16 +137,16 @@ export class AttendanceService {
     const allowed = shiftStart.getTime() + rule.gracePeriodMinutes * 60000;
 
     if (firstPunch.getTime() > allowed) {
-      const minutesLate = Math.floor((firstPunch - allowed) / 60000);
+      const minutesLate = Math.floor((firstPunch.getTime() - allowed) / 60000);
 
-      await this.exceptionsSvc.createException({
-        employeeId,
-        attendanceRecordId: record._id.toString(),
-        type: TimeExceptionType.LATE,
-        reason: `Late by ${minutesLate} minutes`,
-      });
+    await this.exceptionsSvc.createException({
+  employeeId,
+  attendanceRecordId: record._id.toString(),
+  type: TimeExceptionType.LATE,
+  reason: `Late by ${minutesLate} minutes`,
+  assignedTo: employeeId
+});
+
     }
   }
 }
-
-export default AttendanceService;
