@@ -5,6 +5,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 // ---------------------
 // M1 Models (Time Management)
 // ---------------------
+import { AttendanceController } from './controllers/attendance.controller';
+import { AttendanceService } from './services/attendance.service';
+
 import { NotificationLog, NotificationLogSchema } from './Models/notification-log.schema';
 import { AttendanceCorrectionRequest, AttendanceCorrectionRequestSchema } from './Models/attendance-correction-request.schema';
 import { ShiftType, ShiftTypeSchema } from './Models/shift-type.schema';
@@ -86,7 +89,7 @@ import { IntegrationService } from './services/integration.service';
       { name: EmployeeProfile.name, schema: EmployeeProfileSchema },
       { name: Department.name, schema: DepartmentSchema },
       { name: Position.name, schema: PositionSchema },
-      { name: employeePenalties.name, schema: employeePenaltiesSchema },
+     // { name: employeePenalties.name, schema: employeePenaltiesSchema },
       
     ]),
   ],
@@ -100,6 +103,7 @@ import { IntegrationService } from './services/integration.service';
     HolidaysController,
     ReportingController,
     TimeManagementController,
+    AttendanceController,
   ],
 
   providers: [
@@ -114,6 +118,7 @@ import { IntegrationService } from './services/integration.service';
     ReportingService,
     IntegrationService,
     TimeManagementService,
+    AttendanceService,
   ],
 
   exports: [

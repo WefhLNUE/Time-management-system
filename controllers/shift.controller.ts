@@ -50,7 +50,7 @@ export class ShiftController {
 
   // Update shift → Only HR Manager, HR Admin, System Admin
 
-     @Roles(SystemRole.HR_ADMIN,
+    @Roles(SystemRole.HR_ADMIN,
         SystemRole.HR_MANAGER,
         SystemRole.SYSTEM_ADMIN
   )
