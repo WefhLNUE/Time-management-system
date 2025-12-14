@@ -34,8 +34,8 @@ import { Department, DepartmentSchema }
 import { Position, PositionSchema } 
   from '../organization-structure/Models/position.schema';
 
-import { employeePenalties, employeePenaltiesSchema }
-  from '../payroll-execution/Models/employeePenalties.schema';
+//import { employeePenalties, employeePenaltiesSchema }
+  //from '../payroll-execution/Models/employeePenalties.schema';
 
 //leaves prob looh imports bss i cant find them 
 // ---------------------
@@ -89,7 +89,7 @@ import { IntegrationService } from './services/integration.service';
       { name: EmployeeProfile.name, schema: EmployeeProfileSchema },
       { name: Department.name, schema: DepartmentSchema },
       { name: Position.name, schema: PositionSchema },
-     // { name: employeePenalties.name, schema: employeePenaltiesSchema },
+      { name: employeePenalties.name, schema: employeePenaltiesSchema },
       
     ]),
   ],
