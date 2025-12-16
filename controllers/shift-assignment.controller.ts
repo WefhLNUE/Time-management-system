@@ -24,6 +24,18 @@ export class ShiftAssignmentController {
     return this.svc.create(dto);
   }
 
+  @Roles(
+  SystemRole.HR_ADMIN,
+  SystemRole.HR_MANAGER,
+  SystemRole.DEPARTMENT_EMPLOYEE,
+  SystemRole.DEPARTMENT_HEAD,
+  SystemRole.SYSTEM_ADMIN
+)
+@Get(':id')
+findOne(@Param('id') id: string) {
+  return this.svc.findOne(id);
+}
+
   // View all assignments → HR Admin, HR Manager, System Admin
 
      @Roles(SystemRole.HR_ADMIN,

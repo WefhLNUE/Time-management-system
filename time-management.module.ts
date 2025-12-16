@@ -3,11 +3,42 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 
 // ---------------------
-// M1 Models (Time Management)
+// Controllers
 // ---------------------
+import { ShiftTypeController } from './controllers/shift-type.controller';
+import { ShiftController } from './controllers/shift.controller';
+import { ScheduleRuleController } from './controllers/schedule-rule.controller';
+import { ShiftAssignmentController } from './controllers/shift-assignment.controller';
 import { AttendanceController } from './controllers/attendance.controller';
-import { AttendanceService } from './services/attendance.service';
+import { ExceptionsController } from './controllers/exceptions.controller';
+import { HolidaysController } from './controllers/holidays.controller';
+import { ReportingController } from './controllers/reporting.controller';
+import { NotificationController } from './controllers/notification.controller';
+import { TimeManagementController } from './time-management.controller';
 
+// ---------------------
+// Services
+// ---------------------
+import { ShiftTypeService } from './services/shift-type.service';
+import { ShiftService } from './services/shift.service';
+import { ScheduleRuleService } from './services/schedule-rule.service';
+import { ShiftAssignmentService } from './services/shift-assignment.service';
+import { AttendanceService } from './services/attendance.service';
+import { NotificationService } from './services/notification.service';
+import { ExceptionsService } from './services/exceptions.service';
+import { HolidaysService } from './services/holidays.service';
+import { ReportingService } from './services/reporting.service';
+import { IntegrationService } from './services/integration.service';
+import { TimeManagementService } from './time-management.service';
+
+// ---------------------
+// Cron Jobs
+// ---------------------
+import { ShiftExpiryCron } from './cron/shift-expiry.cron';
+
+// ---------------------
+// Models (Time Management)
+// ---------------------
 import { NotificationLog, NotificationLogSchema } from './Models/notification-log.schema';
 import { AttendanceCorrectionRequest, AttendanceCorrectionRequestSchema } from './Models/attendance-correction-request.schema';
 import { ShiftType, ShiftTypeSchema } from './Models/shift-type.schema';
@@ -21,58 +52,29 @@ import { LatenessRule, latenessRuleSchema } from './Models/lateness-rule.schema'
 import { Holiday, HolidaySchema } from './Models/holiday.schema';
 
 // ---------------------
-// Cross-Module Imports
+// Cross-Module Models
 // ---------------------
-
-// Employee Profile
-import { EmployeeProfile, EmployeeProfileSchema } 
+import { EmployeeProfile, EmployeeProfileSchema }
   from '../employee-profile/Models/employee-profile.schema';
 
-import { Department, DepartmentSchema } 
+import { Department, DepartmentSchema }
   from '../organization-structure/Models/department.schema';
 
-import { Position, PositionSchema } 
+import { Position, PositionSchema }
   from '../organization-structure/Models/position.schema';
 
-//import { employeePenalties, employeePenaltiesSchema }
+  //import { employeePenalties, employeePenaltiesSchema }
   //from '../payroll-execution/Models/employeePenalties.schema';
 
-//leaves prob looh imports bss i cant find them 
 // ---------------------
-// Controllers
+// Module Definition
 // ---------------------
-import { ShiftTypeController } from './controllers/shift-type.controller';
-import { ShiftController } from './controllers/shift.controller';
-import { ScheduleRuleController } from './controllers/schedule-rule.controller';
-import { ShiftAssignmentController } from './controllers/shift-assignment.controller';
-import { TimeManagementController } from './time-management.controller';
-
-import { ExceptionsController } from './controllers/exceptions.controller';
-import { HolidaysController } from './controllers/holidays.controller';
-import { ReportingController } from './controllers/reporting.controller';
-
-// ---------------------
-// Services
-// ---------------------
-import { ShiftTypeService } from './services/shift-type.service';
-import { ShiftService } from './services/shift.service';
-import { ScheduleRuleService } from './services/schedule-rule.service';
-import { ShiftAssignmentService } from './services/shift-assignment.service';
-import { NotificationService } from './services/notification.service';
-import { ShiftExpiryCron } from './cron/shift-expiry.cron';
-import { TimeManagementService } from './time-management.service';
-
-import { ExceptionsService } from './services/exceptions.service';
-import { HolidaysService } from './services/holidays.service';
-import { ReportingService } from './services/reporting.service';
-import { IntegrationService } from './services/integration.service';
-
 @Module({
   imports: [
     ScheduleModule.forRoot(),
 
     MongooseModule.forFeature([
-      // Time Management Schemas
+      // Time-Management Schemas
       { name: NotificationLog.name, schema: NotificationLogSchema },
       { name: AttendanceCorrectionRequest.name, schema: AttendanceCorrectionRequestSchema },
       { name: ShiftType.name, schema: ShiftTypeSchema },
@@ -85,12 +87,10 @@ import { IntegrationService } from './services/integration.service';
       { name: LatenessRule.name, schema: latenessRuleSchema },
       { name: Holiday.name, schema: HolidaySchema },
 
-      // Cross-module schemas
+      // Cross-module Schemas
       { name: EmployeeProfile.name, schema: EmployeeProfileSchema },
       { name: Department.name, schema: DepartmentSchema },
       { name: Position.name, schema: PositionSchema },
-      { name: employeePenalties.name, schema: employeePenaltiesSchema },
-      
     ]),
   ],
 
@@ -99,11 +99,12 @@ import { IntegrationService } from './services/integration.service';
     ShiftController,
     ScheduleRuleController,
     ShiftAssignmentController,
+    AttendanceController,
+    NotificationController,
     ExceptionsController,
     HolidaysController,
     ReportingController,
     TimeManagementController,
-    AttendanceController,
   ],
 
   providers: [
@@ -111,6 +112,7 @@ import { IntegrationService } from './services/integration.service';
     ShiftService,
     ScheduleRuleService,
     ShiftAssignmentService,
+    AttendanceService,
     NotificationService,
     ShiftExpiryCron,
     ExceptionsService,
@@ -118,7 +120,6 @@ import { IntegrationService } from './services/integration.service';
     ReportingService,
     IntegrationService,
     TimeManagementService,
-    AttendanceService,
   ],
 
   exports: [
