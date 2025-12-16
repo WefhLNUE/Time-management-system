@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { NotificationLogDocument } from '../Models/notification-log.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 @Injectable()
 export class NotificationService {
@@ -10,14 +10,22 @@ export class NotificationService {
     private readonly model: Model<NotificationLogDocument>,
   ) {}
 
-  async createNotification(
-    to: Record<string, any> | null,   //3lshan t2bal null or object
-    message: string,
-  ) {
-    return this.model.create({
-      to: to ?? null,
-      type: 'SYSTEM',
-      message,
-    });
+async createNotification(
+  to: Types.ObjectId,
+  message: string,
+) {
+  return this.model.create({
+    to,
+    type: 'SYSTEM',
+    message,
+  });
+}
+
+
+  async findForEmployee(employeeId: string) {
+    return this.model
+      .find({ to: employeeId })
+      .sort({ createdAt: -1 })
+      .lean();
   }
 }

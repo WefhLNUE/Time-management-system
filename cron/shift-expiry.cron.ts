@@ -24,10 +24,17 @@ export class ShiftExpiryCron {
       status: { $in: ['PENDING','APPROVED'] },
     }).lean();
 
-    for (const a of toExpire) {
-      await this.assignmentSvc.expireAssignment(a._id.toString());
+   for (const a of toExpire) {
+  await this.assignmentSvc.expireAssignment(a._id.toString());
 
-    }
+  if (a.employeeId) {
+    await this.assignmentSvc['notificationSvc'].createNotification(
+      a.employeeId,
+      'Your shift assignment has expired.',
+    );
+  }
+}
+
     this.logger.log(`Expired ${toExpire.length} assignments`);
   }
 }
