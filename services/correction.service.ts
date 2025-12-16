@@ -5,8 +5,11 @@ import { Model } from 'mongoose';
 @Injectable()
 export class CorrectionService {
   constructor(
-    @InjectModel('AttendanceCorrectionRequest') private readonly correction: Model<any>,
-    @InjectModel('AttendanceRecord') private readonly attendance: Model<any>
+      @InjectModel('AttendanceCorrectionRequest')
+      private readonly correction: Model<any>,
+
+      @InjectModel('AttendanceRecord')
+      private readonly attendance: Model<any>
   ) {}
 
   async createRequest(dto) {
@@ -36,5 +39,10 @@ export class CorrectionService {
     await rec.save();
 
     return req;
+  }
+
+  // ✅ ADD ONLY THIS
+  async findAll() {
+    return this.correction.find().sort({ createdAt: -1 }).exec();
   }
 }

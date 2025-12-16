@@ -1,4 +1,4 @@
-import { Controller, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Patch, Body, Param, UseGuards, Get } from '@nestjs/common';
 import { CorrectionService } from '../services/correction.service';
 import { CorrectionRequestDto } from '../dto/correction-request.dto';
 import { UpdateCorrectionStatusDto } from '../dto/update-correction-status.dto';
@@ -16,6 +16,13 @@ export class CorrectionController {
   @Post()
   create(@Body() dto: CorrectionRequestDto) {
     return this.svc.createRequest(dto);
+  }
+
+  // ✅ ADD THIS
+  @Roles(SystemRole.DEPARTMENT_HEAD, SystemRole.HR_MANAGER)
+  @Get()
+  findAll() {
+    return this.svc.findAll();
   }
 
   @Roles(SystemRole.DEPARTMENT_HEAD, SystemRole.HR_MANAGER)
