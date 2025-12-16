@@ -52,16 +52,13 @@ export class ShiftAssignmentService {
   // ---------------------------------------
   async create(dto: CreateShiftAssignmentDto) {
 
-    // -------------------------------
-    // 1) Validate Employee (if provided)
-    // -------------------------------
+    // 1) Validate Employee
     if (dto.employeeId) {
       const employee = await this.employeeModel.findById(dto.employeeId);
       if (!employee) {
         throw new NotFoundException('Employee not found');
       }
 
-      // Overlap detection for employee
       const existing = await this.model.find({
         employeeId: dto.employeeId,
         status: { $in: ['PENDING', 'APPROVED'] },
@@ -76,25 +73,19 @@ export class ShiftAssignmentService {
       }
     }
 
-    // -------------------------------
     // 2) Validate Department
-    // -------------------------------
     if (dto.departmentId) {
       const dept = await this.deptModel.findById(dto.departmentId);
       if (!dept) throw new NotFoundException('Department not found');
     }
 
-    // -------------------------------
     // 3) Validate Position
-    // -------------------------------
     if (dto.positionId) {
       const pos = await this.positionModel.findById(dto.positionId);
       if (!pos) throw new NotFoundException('Position not found');
     }
 
-    // -------------------------------
-    // 4) Create the shift assignment
-    // -------------------------------
+    // 4) Create assignment
     const doc = await this.model.create(dto);
     return doc;
   }
@@ -116,12 +107,29 @@ export class ShiftAssignmentService {
   }
 
   // ---------------------------------------
+  // Get single assignment by ID (EDIT PAGE)
+  // ---------------------------------------
+  async findOne(id: string) {
+    const doc = await this.model
+      .findById(id)
+      .populate(['shiftId', 'scheduleRuleId'])
+      .lean();
+
+    if (!doc) {
+      throw new NotFoundException('Assignment not found');
+    }
+
+    return doc;
+  }
+
+  // ---------------------------------------
   // Update assignment
   // ---------------------------------------
   async update(id: string, patch: any) {
     const doc = await this.model
       .findByIdAndUpdate(id, patch, { new: true })
       .lean();
+
     if (!doc) throw new NotFoundException('assignment not found');
     return doc;
   }
@@ -129,22 +137,29 @@ export class ShiftAssignmentService {
   // ---------------------------------------
   // Expire Assignment (Cron)
   // ---------------------------------------
-  async expireAssignment(id: string) {
-    const doc = await this.model.findByIdAndUpdate(
-      id,
-      { status: 'EXPIRED' },
-      { new: true },
-    );
+// ---------------------------------------
+// Expire Assignment (Cron)
+// ---------------------------------------
+async expireAssignment(id: string) {
+  const doc = await this.model.findByIdAndUpdate(
+    id,
+    { status: 'EXPIRED' },
+    { new: true },
+  );
 
-    if (doc) {
-      await this.notificationSvc.createNotification(
-        null,
-        `Shift assignment expired for ${
-          doc.employeeId?.toString() || 'an employee'
-        }`,
-      );
-    }
-
-    return doc;
+  if (!doc) {
+    throw new NotFoundException('Assignment not found');
   }
+
+  // ✅ GUARANTEE a valid ObjectId before notifying
+  if (doc.employeeId) {
+    await this.notificationSvc.createNotification(
+      doc.employeeId,
+      'Your shift assignment has expired.',
+    );
+  }
+
+  return doc;
+}
+
 }
