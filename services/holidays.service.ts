@@ -1,26 +1,34 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { CreateHolidayDto } from '../dto/create-holiday.dto';
 import { UpdateHolidayDto } from '../dto/update-holiday.dto';
+import { Holiday } from '../Models/holiday.schema';
 
 @Injectable()
 export class HolidaysService {
-  constructor(@InjectModel('Holiday') private readonly holidayModel: Model<any>) {}
+  constructor(
+      @InjectModel(Holiday.name)
+      private readonly holidayModel: Model<Holiday>,
+  ) {}
 
   async createHoliday(dto: CreateHolidayDto) {
     const doc = await this.holidayModel.create({
       name: dto.name,
+      type: dto.type,
       startDate: new Date(dto.startDate),
-      endDate: new Date(dto.endDate),
-      description: dto.description || '',
-      createdAt: new Date(),
+      endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+      active: dto.active ?? true,
     });
+
     return doc.toObject();
   }
 
   async findAll() {
-    return this.holidayModel.find().sort({ startDate: -1 }).lean();
+    return this.holidayModel
+        .find({ active: true })
+        .sort({ startDate: 1 })
+        .lean();
   }
 
   async findById(id: string) {
@@ -32,10 +40,15 @@ export class HolidaysService {
   async update(id: string, dto: UpdateHolidayDto) {
     const doc = await this.holidayModel.findById(id);
     if (!doc) throw new NotFoundException('Holiday not found');
-    if (dto.name) doc.name = dto.name;
-    if (dto.startDate) doc.startDate = new Date(dto.startDate);
-    if (dto.endDate) doc.endDate = new Date(dto.endDate);
-    if (dto.description) doc.description = dto.description;
+
+    if (dto.name !== undefined) doc.name = dto.name;
+    if (dto.type !== undefined) doc.type = dto.type;
+    if (dto.startDate !== undefined)
+      doc.startDate = new Date(dto.startDate);
+    if (dto.endDate !== undefined)
+      doc.endDate = dto.endDate ? new Date(dto.endDate) : undefined;
+    if (dto.active !== undefined) doc.active = dto.active;
+
     await doc.save();
     return doc.toObject();
   }
@@ -46,12 +59,21 @@ export class HolidaysService {
     return { deleted: true };
   }
 
-  // Utility: check if a date is holiday
-  async isHoliday(date: Date) {
+  /**
+   * Utility: check if a date falls on a holiday
+   */
+  async isHoliday(date: Date): Promise<boolean> {
     const d = new Date(date);
-    return this.holidayModel.exists({
+
+    const exists = await this.holidayModel.exists({
+      active: true,
       startDate: { $lte: d },
-      endDate: { $gte: d },
+      $or: [
+        { endDate: { $exists: false } },
+        { endDate: { $gte: d } },
+      ],
     });
+
+    return !!exists;
   }
 }
