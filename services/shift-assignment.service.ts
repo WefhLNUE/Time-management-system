@@ -1,21 +1,20 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
-// --------------------------
-// Local Time-Management Models
-// --------------------------
 import { ShiftAssignmentDocument } from '../Models/shift-assignment.schema';
 import { CreateShiftAssignmentDto } from '../dto/create-shift-assignment.dto';
 import { NotificationService } from './notification.service';
 
-// --------------------------
-// IMPORTS FROM OTHER REPOS
-// (Employee-Profile + Org-Structure)
-// --------------------------
 import { EmployeeProfile } from '../../employee-profile/Models/employee-profile.schema';
 import { Department } from '../../organization-structure/Models/department.schema';
 import { Position } from '../../organization-structure/Models/position.schema';
+import { ShiftAssignmentStatus } from '../Models/enums';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class ShiftAssignmentService {
@@ -25,7 +24,6 @@ export class ShiftAssignmentService {
 
     private readonly notificationSvc: NotificationService,
 
-    // Employee + Org-Structure Models
     @InjectModel(EmployeeProfile.name)
     private readonly employeeModel: Model<any>,
 
@@ -48,20 +46,16 @@ export class ShiftAssignmentService {
   }
 
   // ---------------------------------------
-  // Create Shift Assignment
+  // Create Assignment
   // ---------------------------------------
   async create(dto: CreateShiftAssignmentDto) {
-
-    // 1) Validate Employee
     if (dto.employeeId) {
       const employee = await this.employeeModel.findById(dto.employeeId);
-      if (!employee) {
-        throw new NotFoundException('Employee not found');
-      }
+      if (!employee) throw new NotFoundException('Employee not found');
 
       const existing = await this.model.find({
         employeeId: dto.employeeId,
-        status: { $in: ['PENDING', 'APPROVED'] },
+        status: { $in: [ShiftAssignmentStatus.PENDING, ShiftAssignmentStatus.APPROVED] },
       });
 
       for (const ex of existing) {
@@ -73,93 +67,130 @@ export class ShiftAssignmentService {
       }
     }
 
-    // 2) Validate Department
     if (dto.departmentId) {
       const dept = await this.deptModel.findById(dto.departmentId);
       if (!dept) throw new NotFoundException('Department not found');
     }
 
-    // 3) Validate Position
     if (dto.positionId) {
       const pos = await this.positionModel.findById(dto.positionId);
       if (!pos) throw new NotFoundException('Position not found');
     }
 
-    // 4) Create assignment
-    const doc = await this.model.create(dto);
-    return doc;
+    return this.model.create(dto);
   }
 
   // ---------------------------------------
-  // Get all assignments
+  // Queries
   // ---------------------------------------
   async findAll() {
     return this.model.find({}).lean();
   }
 
-  // ---------------------------------------
-  // Get assignments for an employee
-  // ---------------------------------------
   async findForEmployee(employeeId: string) {
-    return this.model
-      .find({ employeeId, status: { $in: ['PENDING', 'APPROVED'] } })
-      .lean();
+    return this.model.find({ employeeId }).lean();
   }
 
-  // ---------------------------------------
-  // Get single assignment by ID (EDIT PAGE)
-  // ---------------------------------------
   async findOne(id: string) {
     const doc = await this.model
       .findById(id)
       .populate(['shiftId', 'scheduleRuleId'])
       .lean();
 
-    if (!doc) {
-      throw new NotFoundException('Assignment not found');
+    if (!doc) throw new NotFoundException('Assignment not found');
+    return doc;
+  }
+
+  // ---------------------------------------
+// Cron: Expire approved assignments
+// ---------------------------------------
+@Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+async expireAssignment() {
+  const now = new Date();
+
+  const expiredAssignments = await this.model.find({
+    status: ShiftAssignmentStatus.APPROVED,
+    endDate: { $lt: now },
+  });
+
+  for (const assignment of expiredAssignments) {
+    assignment.status = ShiftAssignmentStatus.EXPIRED;
+    await assignment.save();
+
+    if (assignment.employeeId) {
+      await this.notificationSvc.createNotification(
+        assignment.employeeId,
+        'Your shift assignment has expired.',
+      );
+    }
+  }
+}
+
+  // ---------------------------------------
+  // Update (ONLY PENDING)
+  // ---------------------------------------
+  async update(id: string, patch: any) {
+    const existing = await this.model.findById(id);
+    if (!existing) throw new NotFoundException('Assignment not found');
+
+    if (existing.status !== ShiftAssignmentStatus.PENDING) {
+      throw new BadRequestException(
+        'Only pending assignments can be edited',
+      );
+    }
+
+    return this.model
+      .findByIdAndUpdate(id, patch, { new: true })
+      .lean();
+  }
+
+  // ===============================
+  // ✅ APPROVAL LOGIC
+  // ===============================
+
+  async approve(id: string) {
+    const doc = await this.model.findById(id);
+    if (!doc) throw new NotFoundException('Assignment not found');
+
+    if (doc.status !== ShiftAssignmentStatus.PENDING) {
+      throw new BadRequestException(
+        'Only pending assignments can be approved',
+      );
+    }
+
+    doc.status = ShiftAssignmentStatus.APPROVED;
+    await doc.save();
+
+    if (doc.employeeId) {
+      await this.notificationSvc.createNotification(
+        doc.employeeId,
+        'Your shift assignment has been approved.',
+      );
     }
 
     return doc;
   }
 
-  // ---------------------------------------
-  // Update assignment
-  // ---------------------------------------
-  async update(id: string, patch: any) {
-    const doc = await this.model
-      .findByIdAndUpdate(id, patch, { new: true })
-      .lean();
+  async reject(id: string) {
+    const doc = await this.model.findById(id);
+    if (!doc) throw new NotFoundException('Assignment not found');
 
-    if (!doc) throw new NotFoundException('assignment not found');
+    if (doc.status !== ShiftAssignmentStatus.PENDING) {
+      throw new BadRequestException(
+        'Only pending assignments can be cancelled',
+      );
+    }
+
+    doc.status = ShiftAssignmentStatus.CANCELLED;
+    await doc.save();
+
+    if (doc.employeeId) {
+      await this.notificationSvc.createNotification(
+        doc.employeeId,
+        'Your shift assignment has been cancelled.',
+      );
+    }
+
     return doc;
   }
-
-  // ---------------------------------------
-  // Expire Assignment (Cron)
-  // ---------------------------------------
-// ---------------------------------------
-// Expire Assignment (Cron)
-// ---------------------------------------
-async expireAssignment(id: string) {
-  const doc = await this.model.findByIdAndUpdate(
-    id,
-    { status: 'EXPIRED' },
-    { new: true },
-  );
-
-  if (!doc) {
-    throw new NotFoundException('Assignment not found');
-  }
-
-  // ✅ GUARANTEE a valid ObjectId before notifying
-  if (doc.employeeId) {
-    await this.notificationSvc.createNotification(
-      doc.employeeId,
-      'Your shift assignment has expired.',
-    );
-  }
-
-  return doc;
-}
-
 }

@@ -25,7 +25,7 @@ export class ShiftExpiryCron {
     }).lean();
 
    for (const a of toExpire) {
-  await this.assignmentSvc.expireAssignment(a._id.toString());
+  await this.assignmentSvc.expireAssignment();
 
   if (a.employeeId) {
     await this.assignmentSvc['notificationSvc'].createNotification(
