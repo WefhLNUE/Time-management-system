@@ -1,6 +1,7 @@
 // src/time-management/services/notification.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
 import { NotificationLogDocument } from '../Models/notification-log.schema';
 import { Model, Types } from 'mongoose';
 

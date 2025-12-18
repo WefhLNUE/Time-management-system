@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Param } from '@nestjs/common';
 import { ScheduleRuleService } from '../services/schedule-rule.service';
 import { CreateScheduleRuleDto } from '../dto/create-schedule-rule.dto';
 import { UseGuards } from '@nestjs/common';
@@ -12,37 +12,47 @@ import { SystemRole } from 'src/employee-profile/enums/employee-profile.enums';
 export class ScheduleRuleController {
   constructor(private readonly svc: ScheduleRuleService) {}
 
-  // Only HR Manager, HR Admin, System Admin can create schedule rules
-
-     @Roles(SystemRole.HR_ADMIN,
-          SystemRole.HR_MANAGER,
-          SystemRole.SYSTEM_ADMIN
-    )
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.SYSTEM_ADMIN,
+  )
   @Post()
   create(@Body() dto: CreateScheduleRuleDto) {
     return this.svc.create(dto);
   }
 
-  // HR, Managers, Admins can view schedule rules
-
-     @Roles(SystemRole.HR_ADMIN,
-        SystemRole.HR_MANAGER,
-        SystemRole.DEPARTMENT_HEAD,
-        SystemRole.SYSTEM_ADMIN
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.SYSTEM_ADMIN,
   )
   @Get()
   findAll() {
     return this.svc.findAll();
   }
 
-  // Only HR Manager, HR Admin, System Admin can update
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.SYSTEM_ADMIN,
+  )
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.svc.findById(id);
+  }
 
-     @Roles(SystemRole.HR_ADMIN,
-          SystemRole.HR_MANAGER,
-          SystemRole.SYSTEM_ADMIN
-    )
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.SYSTEM_ADMIN,
+  )
   @Patch(':id')
-  update() {
-    // implement as needed
+  update(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateScheduleRuleDto>,
+  ) {
+    return this.svc.update(id, dto);
   }
 }

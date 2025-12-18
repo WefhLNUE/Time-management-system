@@ -12,50 +12,112 @@ import { SystemRole } from 'src/employee-profile/enums/employee-profile.enums';
 export class ShiftAssignmentController {
   constructor(private readonly svc: ShiftAssignmentService) {}
 
-  // Create shift assignment → HR Manager, HR Admin, Line Manager
+  // ======================================
+  // EMPLOYEES LIST (FOR ASSIGNMENT UI)
+  // ⚠ MUST BE ABOVE :id ROUTES
+  // ======================================
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.SYSTEM_ADMIN
+  )
+  @Get('employees')
+  getEmployeesForAssignment() {
+    return this.svc.getEmployeesForAssignment();
+  }
 
-     @Roles(SystemRole.HR_ADMIN,
-          SystemRole.HR_MANAGER,
-          SystemRole.DEPARTMENT_HEAD,
-          SystemRole.SYSTEM_ADMIN
-    )
+  // ======================================
+  // CREATE ASSIGNMENT
+  // ======================================
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.SYSTEM_ADMIN
+  )
   @Post()
   create(@Body() dto: CreateShiftAssignmentDto) {
     return this.svc.create(dto);
   }
 
-  // View all assignments → HR Admin, HR Manager, System Admin
-
-     @Roles(SystemRole.HR_ADMIN,
-        SystemRole.HR_MANAGER,
-        SystemRole.SYSTEM_ADMIN
+  // ======================================
+  // VIEW ALL ASSIGNMENTS
+  // ======================================
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.SYSTEM_ADMIN
   )
   @Get()
   findAll() {
     return this.svc.findAll();
   }
 
-  // Employee can view their own + HR / Managers can view any
-  
-     @Roles(SystemRole.HR_ADMIN,
-        SystemRole.HR_MANAGER,
-        SystemRole.DEPARTMENT_EMPLOYEE,
-        SystemRole.DEPARTMENT_HEAD,
-        SystemRole.SYSTEM_ADMIN
+  // ======================================
+  // VIEW ASSIGNMENTS FOR EMPLOYEE
+  // ======================================
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.DEPARTMENT_EMPLOYEE,
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.SYSTEM_ADMIN
   )
   @Get('employee/:employeeId')
   findForEmployee(@Param('employeeId') employeeId: string) {
     return this.svc.findForEmployee(employeeId);
   }
 
-  // Update assignment → HR Admin, HR Manager, System Admin
+  // ======================================
+  // VIEW SINGLE ASSIGNMENT (EDIT PAGE)
+  // ⚠ MUST COME AFTER STATIC ROUTES
+  // ======================================
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.DEPARTMENT_EMPLOYEE,
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.SYSTEM_ADMIN
+  )
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.svc.findOne(id);
+  }
 
-     @Roles(SystemRole.HR_ADMIN,
-        SystemRole.HR_MANAGER,
-        SystemRole.SYSTEM_ADMIN
+  // ======================================
+  // UPDATE ASSIGNMENT (ONLY PENDING)
+  // ======================================
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.SYSTEM_ADMIN
   )
   @Patch(':id')
   update(@Param('id') id: string, @Body() body: any) {
     return this.svc.update(id, body);
+  }
+
+  // ======================================
+  // APPROVAL WORKFLOW
+  // ======================================
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.SYSTEM_ADMIN
+  )
+  @Patch(':id/approve')
+  approve(@Param('id') id: string) {
+    return this.svc.approve(id);
+  }
+
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.SYSTEM_ADMIN
+  )
+  @Patch(':id/reject')
+  reject(@Param('id') id: string) {
+    return this.svc.reject(id);
   }
 }
