@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 import { ShiftAssignmentDocument } from '../Models/shift-assignment.schema';
 import { CreateShiftAssignmentDto } from '../dto/create-shift-assignment.dto';
@@ -35,7 +35,28 @@ export class ShiftAssignmentService {
   ) {}
 
   // ---------------------------------------
-  // Helper: detect overlapping assignments
+  // Utils
+  // ---------------------------------------
+  private normalizeObjectId(value: any): Types.ObjectId | null {
+    if (!value) return null;
+
+    if (typeof value === 'object' && value._id) {
+      const id = String(value._id).trim();
+      return Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : null;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return Types.ObjectId.isValid(trimmed)
+        ? new Types.ObjectId(trimmed)
+        : null;
+    }
+
+    return null;
+  }
+
+  // ---------------------------------------
+  // Overlap check
   // ---------------------------------------
   private overlaps(existing, startDate, endDate) {
     const s = new Date(startDate).getTime();
@@ -45,39 +66,106 @@ export class ShiftAssignmentService {
     return !(e < es || s > ee);
   }
 
+
   // ---------------------------------------
-  // Create Assignment
+  // Create Assignment (PENDING)
   // ---------------------------------------
   async create(dto: CreateShiftAssignmentDto) {
-    if (dto.employeeId) {
-      const employee = await this.employeeModel.findById(dto.employeeId);
-      if (!employee) throw new NotFoundException('Employee not found');
+    const employeeId = this.normalizeObjectId(dto.employeeId);
+    const shiftId = this.normalizeObjectId(dto.shiftId);
 
-      const existing = await this.model.find({
-        employeeId: dto.employeeId,
-        status: { $in: [ShiftAssignmentStatus.PENDING, ShiftAssignmentStatus.APPROVED] },
-      });
+    if (!employeeId) {
+      throw new BadRequestException('Invalid employee ID');
+    }
 
-      for (const ex of existing) {
-        if (this.overlaps(ex, dto.startDate, dto.endDate)) {
-          throw new BadRequestException(
-            'Overlapping assignment exists for employee',
-          );
-        }
+    if (!shiftId) {
+      throw new BadRequestException('Invalid shift ID');
+    }
+
+    const employee = (await this.employeeModel
+      .findById(employeeId)
+      .lean()
+      .exec()) as {
+      _id: any;
+      primaryDepartmentId?: any;
+      primaryPositionId?: any;
+    } | null;
+
+    if (!employee) throw new NotFoundException('Employee not found');
+
+    // derive org data from employee profile
+    const departmentId =
+  employee.primaryDepartmentId &&
+  Types.ObjectId.isValid(String(employee.primaryDepartmentId).trim())
+    ? new Types.ObjectId(String(employee.primaryDepartmentId).trim())
+    : undefined;
+
+const positionId =
+  employee.primaryPositionId &&
+  Types.ObjectId.isValid(String(employee.primaryPositionId).trim())
+    ? new Types.ObjectId(String(employee.primaryPositionId).trim())
+    : undefined;
+
+    
+
+    if (employee.primaryDepartmentId && !departmentId) {
+      throw new BadRequestException(
+        'Invalid department reference on employee',
+      );
+    }
+
+
+
+    const existing = await this.model.find({
+      employeeId,
+      status: {
+        $in: [
+          ShiftAssignmentStatus.PENDING,
+          ShiftAssignmentStatus.APPROVED,
+        ],
+      },
+    });
+
+    for (const ex of existing) {
+      if (this.overlaps(ex, dto.startDate, dto.endDate)) {
+        throw new BadRequestException(
+          'Overlapping assignment exists for employee',
+        );
       }
     }
 
-    if (dto.departmentId) {
-      const dept = await this.deptModel.findById(dto.departmentId);
-      if (!dept) throw new NotFoundException('Department not found');
-    }
+    return this.model.create({
+      employeeId,
+      shiftId,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+      departmentId: departmentId ?? undefined,
+      positionId: positionId ?? undefined,
+      status: ShiftAssignmentStatus.PENDING,
+    });
+  }
 
-    if (dto.positionId) {
-      const pos = await this.positionModel.findById(dto.positionId);
-      if (!pos) throw new NotFoundException('Position not found');
-    }
-
-    return this.model.create(dto);
+  // ---------------------------------------
+  // Employees for assignment selection
+  // ---------------------------------------
+  async getEmployeesForAssignment() {
+    return this.employeeModel
+      .find(
+        { status: 'ACTIVE' },
+        {
+          _id: 1,
+          employeeNumber: 1,
+          workEmail: 1,
+          firstName: 1,
+          lastName: 1,
+          primaryDepartmentId: 1,
+          primaryPositionId: 1,
+        },
+      )
+      .populate([
+  { path: 'primaryDepartmentId', select: 'name' },
+  // ❌ DO NOT populate primaryPositionId
+    ]).lean();
   }
 
   // ---------------------------------------
@@ -88,13 +176,30 @@ export class ShiftAssignmentService {
   }
 
   async findForEmployee(employeeId: string) {
-    return this.model.find({ employeeId }).lean();
+    const normalizedId = this.normalizeObjectId(employeeId);
+    if (!normalizedId) {
+      throw new BadRequestException('Invalid employee ID');
+    }
+
+    return this.model.find({
+      employeeId: normalizedId,
+      status: {
+        $in: [
+          ShiftAssignmentStatus.PENDING,
+          ShiftAssignmentStatus.APPROVED,
+        ],
+      },
+    }).lean();
   }
 
   async findOne(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid assignment ID');
+    }
+
     const doc = await this.model
       .findById(id)
-      .populate(['shiftId', 'scheduleRuleId'])
+      .populate(['shiftId'])
       .lean();
 
     if (!doc) throw new NotFoundException('Assignment not found');
@@ -102,29 +207,29 @@ export class ShiftAssignmentService {
   }
 
   // ---------------------------------------
-// Cron: Expire approved assignments
-// ---------------------------------------
-@Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-async expireAssignment() {
-  const now = new Date();
+  // Cron: Expire approved assignments
+  // ---------------------------------------
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async expireAssignment() {
+    const now = new Date();
 
-  const expiredAssignments = await this.model.find({
-    status: ShiftAssignmentStatus.APPROVED,
-    endDate: { $lt: now },
-  });
+    const expiredAssignments = await this.model.find({
+      status: ShiftAssignmentStatus.APPROVED,
+      endDate: { $lt: now },
+    });
 
-  for (const assignment of expiredAssignments) {
-    assignment.status = ShiftAssignmentStatus.EXPIRED;
-    await assignment.save();
+    for (const assignment of expiredAssignments) {
+      assignment.status = ShiftAssignmentStatus.EXPIRED;
+      await assignment.save();
 
-    if (assignment.employeeId) {
-      await this.notificationSvc.createNotification(
-        assignment.employeeId,
-        'Your shift assignment has expired.',
-      );
+      if (assignment.employeeId) {
+        await this.notificationSvc.createNotification(
+          assignment.employeeId,
+          'Your shift assignment has expired.',
+        );
+      }
     }
   }
-}
 
   // ---------------------------------------
   // Update (ONLY PENDING)
@@ -144,10 +249,9 @@ async expireAssignment() {
       .lean();
   }
 
-  // ===============================
-  // ✅ APPROVAL LOGIC
-  // ===============================
-
+  // ---------------------------------------
+  // Approval logic
+  // ---------------------------------------
   async approve(id: string) {
     const doc = await this.model.findById(id);
     if (!doc) throw new NotFoundException('Assignment not found');
