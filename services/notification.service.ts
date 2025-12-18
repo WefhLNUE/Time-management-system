@@ -1,37 +1,27 @@
-// src/time-management/services/notification.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { NotificationLogDocument } from '../Models/notification-log.schema';
-import { Model, Types } from 'mongoose';
 
 @Injectable()
 export class NotificationService {
   constructor(
-      @InjectModel('NotificationLog')
-      private readonly model: Model<NotificationLogDocument>,
+    @InjectModel('NotificationLog')
+    private readonly model: Model<NotificationLogDocument>,
   ) {}
 
-  async createNotification(
-      to: Types.ObjectId | null,
-      message: string,
-  ) {
+  async createNotification(to: Types.ObjectId | string, message: string) {
     return this.model.create({
-      to,
+      to: new Types.ObjectId(to), // 🔥 FORCE ObjectId
       type: 'SYSTEM',
       message,
     });
   }
 
-  async getMyNotifications(user: { id: string }) {
+  async findForEmployee(employeeId: string) {
     return this.model
-        .find({
-          $or: [
-            { to: null }, // system-wide
-            { to: new Types.ObjectId(user.id) }, // personal
-          ],
-        })
-        .sort({ createdAt: -1 })
-        .lean();
+      .find({ to: new Types.ObjectId(employeeId) }) // 🔥 MATCH ObjectId
+      .sort({ createdAt: -1 })
+      .lean();
   }
 }

@@ -1,5 +1,5 @@
-import { IsNotEmpty, IsString, IsDateString, IsOptional, IsEnum } from 'class-validator';
-import { HolidayType } from '../Models/enums';
+import { IsNotEmpty, IsString, IsDateString, IsEnum, IsOptional, IsBoolean } from 'class-validator';
+import { HolidayType } from '../Models/enums/index';
 
 export class CreateHolidayDto {
   @IsNotEmpty()
@@ -17,5 +17,8 @@ export class CreateHolidayDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
-}
 
+  @IsOptional()
+  @IsBoolean()
+  active?: boolean;
+}

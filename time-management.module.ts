@@ -69,34 +69,6 @@ import { Position, PositionSchema }
 // ---------------------
 // Module Definition
 // ---------------------
-import { ShiftTypeController } from './controllers/shift-type.controller';
-import { ShiftController } from './controllers/shift.controller';
-import { ScheduleRuleController } from './controllers/schedule-rule.controller';
-import { ShiftAssignmentController } from './controllers/shift-assignment.controller';
-import { TimeManagementController } from './time-management.controller';
-
-import { ExceptionsController } from './controllers/exceptions.controller';
-import { HolidaysController } from './controllers/holidays.controller';
-import { ReportingController } from './controllers/reporting.controller';
-import { NotificationsController } from './controllers/notifications.controller';
-
-
-// ---------------------
-// Services
-// ---------------------
-import { ShiftTypeService } from './services/shift-type.service';
-import { ShiftService } from './services/shift.service';
-import { ScheduleRuleService } from './services/schedule-rule.service';
-import { ShiftAssignmentService } from './services/shift-assignment.service';
-import { NotificationService } from './services/notification.service';
-import { ShiftExpiryCron } from './cron/shift-expiry.cron';
-import { TimeManagementService } from './time-management.service';
-
-import { ExceptionsService } from './services/exceptions.service';
-import { HolidaysService } from './services/holidays.service';
-import { ReportingService } from './services/reporting.service';
-import { IntegrationService } from './services/integration.service';
-
 @Module({
   imports: [
     ScheduleModule.forRoot(),
@@ -133,8 +105,6 @@ import { IntegrationService } from './services/integration.service';
     HolidaysController,
     ReportingController,
     TimeManagementController,
-    AttendanceController,
-    NotificationsController, // ✅ ADD THIS
   ],
 
   providers: [
