@@ -50,6 +50,8 @@ import { TimeManagementController } from './time-management.controller';
 import { ExceptionsController } from './controllers/exceptions.controller';
 import { HolidaysController } from './controllers/holidays.controller';
 import { ReportingController } from './controllers/reporting.controller';
+import { NotificationsController } from './controllers/notifications.controller';
+
 
 // ---------------------
 // Services
@@ -104,6 +106,7 @@ import { IntegrationService } from './services/integration.service';
     ReportingController,
     TimeManagementController,
     AttendanceController,
+    NotificationsController, // ✅ ADD THIS
   ],
 
   providers: [
