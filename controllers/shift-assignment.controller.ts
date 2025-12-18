@@ -12,9 +12,24 @@ import { SystemRole } from 'src/employee-profile/enums/employee-profile.enums';
 export class ShiftAssignmentController {
   constructor(private readonly svc: ShiftAssignmentService) {}
 
-  // ----------------------------
-  // Create Assignment
-  // ----------------------------
+  // ======================================
+  // EMPLOYEES LIST (FOR ASSIGNMENT UI)
+  // ⚠ MUST BE ABOVE :id ROUTES
+  // ======================================
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.SYSTEM_ADMIN
+  )
+  @Get('employees')
+  getEmployeesForAssignment() {
+    return this.svc.getEmployeesForAssignment();
+  }
+
+  // ======================================
+  // CREATE ASSIGNMENT
+  // ======================================
   @Roles(
     SystemRole.HR_ADMIN,
     SystemRole.HR_MANAGER,
@@ -26,9 +41,38 @@ export class ShiftAssignmentController {
     return this.svc.create(dto);
   }
 
-  // ----------------------------
-  // View single assignment
-  // ----------------------------
+  // ======================================
+  // VIEW ALL ASSIGNMENTS
+  // ======================================
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.SYSTEM_ADMIN
+  )
+  @Get()
+  findAll() {
+    return this.svc.findAll();
+  }
+
+  // ======================================
+  // VIEW ASSIGNMENTS FOR EMPLOYEE
+  // ======================================
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.DEPARTMENT_EMPLOYEE,
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.SYSTEM_ADMIN
+  )
+  @Get('employee/:employeeId')
+  findForEmployee(@Param('employeeId') employeeId: string) {
+    return this.svc.findForEmployee(employeeId);
+  }
+
+  // ======================================
+  // VIEW SINGLE ASSIGNMENT (EDIT PAGE)
+  // ⚠ MUST COME AFTER STATIC ROUTES
+  // ======================================
   @Roles(
     SystemRole.HR_ADMIN,
     SystemRole.HR_MANAGER,
@@ -41,38 +85,9 @@ export class ShiftAssignmentController {
     return this.svc.findOne(id);
   }
 
-  // ----------------------------
-  // View all assignments
-  // ----------------------------
-  @Roles(
-    SystemRole.HR_ADMIN,
-    SystemRole.HR_MANAGER,
-    SystemRole.SYSTEM_ADMIN
-  )
-  @Get()
-  findAll() {
-    return this.svc.findAll();
-  }
-
-  // ----------------------------
-  // View assignments for employee
-  // ----------------------------
-  @Roles(
-    SystemRole.HR_ADMIN,
-    SystemRole.HR_MANAGER,
-    SystemRole.DEPARTMENT_EMPLOYEE,
-    SystemRole.DEPARTMENT_HEAD,
-    SystemRole.SYSTEM_ADMIN
-  )
-  @Get('employee/:employeeId')
-  findForEmployee(@Param('employeeId') employeeId: string) {
-    return this.svc.findForEmployee(employeeId);
-  }
-  
-
-  // ----------------------------
-  // Update assignment (ONLY PENDING)
-  // ----------------------------
+  // ======================================
+  // UPDATE ASSIGNMENT (ONLY PENDING)
+  // ======================================
   @Roles(
     SystemRole.HR_ADMIN,
     SystemRole.HR_MANAGER,
@@ -83,10 +98,9 @@ export class ShiftAssignmentController {
     return this.svc.update(id, body);
   }
 
-  // ============================
-  // ✅ APPROVAL ENDPOINTS
-  // ============================
-
+  // ======================================
+  // APPROVAL WORKFLOW
+  // ======================================
   @Roles(
     SystemRole.HR_ADMIN,
     SystemRole.HR_MANAGER,

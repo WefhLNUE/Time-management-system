@@ -1,33 +1,33 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
-import { NotificationLogDocument } from '../Models/notification-log.schema';
 import { Roles } from '../../auth/decorator/roles.decorator';
 import { SystemRole } from 'src/employee-profile/enums/employee-profile.enums';
+import { NotificationService } from '../services/notification.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('notifications')
 export class NotificationController {
   constructor(
-    @InjectModel('NotificationLog')
-    private readonly model: Model<NotificationLogDocument>,
+    private readonly notificationService: NotificationService,
   ) {}
 
-  // 🔔 Get notifications for logged-in user
-    @Roles(
-      SystemRole.HR_ADMIN,
-      SystemRole.HR_MANAGER,
-      SystemRole.SYSTEM_ADMIN,
-    )
+  /**
+   * 🔔 Notifications for logged-in user
+   * req.user.id === EmployeeProfile._id
+   */
+  @Roles(
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.SYSTEM_ADMIN,
+  )
   @Get()
   async getMyNotifications(@Req() req) {
-    const userId = req.user.id;
+    // IMPORTANT: this ID must match NotificationLog.to
+    const employeeProfileId = req.user.id;
 
-    return this.model
-      .find({ to: userId })
-      .sort({ createdAt: -1 })
-      .lean();
+    return this.notificationService.findForEmployee(
+      employeeProfileId.toString(),
+    );
   }
 }
