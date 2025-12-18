@@ -22,7 +22,7 @@ export class ShiftExpiryCron {
    * ⏱ Runs every minute for testing
    * 🔁 Change to EVERY_DAY_AT_MIDNIGHT before submission
    */
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleCron() {
     this.logger.log('Running shift expiry monitor...');
     console.log('🔥 SHIFT CRON IS RUNNING 🔥', new Date().toISOString());
