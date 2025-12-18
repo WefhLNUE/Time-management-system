@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
-import { HolidayType } from './enums/index';
+import { HolidayType } from './enums';
 
 export type HolidayDocument = HydratedDocument<Holiday>;
 
@@ -13,7 +13,7 @@ export class Holiday {
   startDate: Date;
 
   @Prop()
-  endDate?: Date; // if missing, startDate == holiday day
+  endDate?: Date;
 
   @Prop()
   name?: string;

@@ -19,7 +19,7 @@ export class ShiftExpiryCron {
   ) {}
 
   // 🔁 TEMP: every minute for testing
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron(CronExpression.EVERY_MINUTE)
   async handleCron() {
     this.logger.log('Running shift expiry check...');
 
