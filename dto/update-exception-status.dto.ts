@@ -6,6 +6,7 @@ export enum TimeExceptionStatus {
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
   RESOLVED = 'RESOLVED',
+  ESCALATED = 'ESCALATED', // ✅ added
 }
 
 export class UpdateExceptionStatusDto {
