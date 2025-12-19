@@ -9,9 +9,7 @@ export class ReportingService {
       @InjectModel('AttendanceRecord') private readonly attendanceModel: Model<any>,
   ) {}
 
-  // =============================
-  // Exceptions Summary
-  // =============================
+  // ================= Exceptions Summary =================
   async exceptionsSummary(from?: string, to?: string) {
     const q: any = {};
     if (from || to) q.createdAt = {};
@@ -29,16 +27,20 @@ export class ReportingService {
     ]);
 
     const total = breakdown.reduce((s, r) => s + r.count, 0);
-
-    return {
-      total,
-      breakdown,
-    };
+    return { total, breakdown };
   }
 
-  // =============================
-  // Overtime Summary (Payroll)
-  // =============================
+  async exportExceptionsCsv(): Promise<string> {
+    const data = await this.exceptionModel.find().lean();
+
+    let csv = 'ExceptionID,EmployeeID,Status,Type,CreatedAt\n';
+    for (const e of data) {
+      csv += `${e._id},${e.employeeId},${e.status},${e.type},${e.createdAt}\n`;
+    }
+    return csv;
+  }
+
+  // ================= Overtime Summary =================
   async overtimeSummary(from?: string, to?: string) {
     const q: any = {};
     if (from || to) q.date = {};
@@ -56,9 +58,17 @@ export class ReportingService {
     ]);
   }
 
-  // =============================
-  // Lateness Summary
-  // =============================
+  async exportOvertimeCsv(): Promise<string> {
+    const data = await this.overtimeSummary();
+
+    let csv = 'EmployeeID,TotalOvertimeMinutes\n';
+    for (const r of data) {
+      csv += `${r._id},${r.totalOvertimeMinutes}\n`;
+    }
+    return csv;
+  }
+
+  // ================= Lateness Summary =================
   async latenessSummary(from?: string, to?: string) {
     const q: any = {};
     if (from || to) q.date = {};
@@ -78,9 +88,7 @@ export class ReportingService {
     ]);
   }
 
-  // =============================
-  // Dashboard KPIs
-  // =============================
+  // ================= Dashboard KPIs =================
   async dashboardKpis() {
     const total = await this.exceptionModel.countDocuments();
     const approved = await this.exceptionModel.countDocuments({ status: 'APPROVED' });

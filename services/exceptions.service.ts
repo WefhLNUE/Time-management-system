@@ -24,7 +24,6 @@ export class ExceptionsService {
     const now = new Date();
     const employeeObjectId = new Types.ObjectId(dto.employeeId);
 
-    // Required by schema (placeholders, replaced later)
     const assignedTo = dto.assignedTo
         ? new Types.ObjectId(dto.assignedTo)
         : employeeObjectId;
@@ -37,10 +36,11 @@ export class ExceptionsService {
       employeeId: employeeObjectId,
       attendanceRecordId,
       assignedTo,
-      type: 'MANUAL_ADJUSTMENT', // ✅ VALID ENUM VALUE
+      type: dto.type ?? 'MANUAL_ADJUSTMENT',
       reason: dto.reason,
       status: TimeExceptionStatus.OPEN,
       createdAt: now,
+      updatedAt: now,
     });
 
     await this.logNotification({
@@ -105,7 +105,7 @@ export class ExceptionsService {
 
     await this.logNotification({
       employeeId: doc.employeeId,
-      message: `Exception ${doc._id} status changed ${oldStatus} -> ${nextStatus}`,
+      message: `Exception ${doc._id} status changed ${oldStatus} → ${nextStatus}`,
       type: 'EXCEPTION_STATUS_CHANGED',
       createdAt: new Date(),
     });
@@ -114,15 +114,42 @@ export class ExceptionsService {
   }
 
   private allowedTransition(from: string, to: string): boolean {
-    const transitions = {
+    const transitions: Record<string, string[]> = {
       OPEN: ['PENDING', 'REJECTED'],
-      PENDING: ['APPROVED', 'REJECTED', 'OPEN'],
+      PENDING: ['APPROVED', 'REJECTED', 'ESCALATED'],
+      ESCALATED: ['APPROVED', 'REJECTED'],
       APPROVED: ['RESOLVED'],
       REJECTED: [],
       RESOLVED: [],
     };
 
     return transitions[from]?.includes(to) ?? false;
+  }
+
+  // 🔴 REQUIRED BY REQUIREMENT #18
+  async escalatePendingBeforeCutoff(cutoffDate: Date) {
+    const overdue = await this.exceptionModel.find({
+      status: TimeExceptionStatus.PENDING,
+      updatedAt: { $lte: cutoffDate },
+    });
+
+    for (const ex of overdue) {
+      ex.status = TimeExceptionStatus.ESCALATED;
+      ex.updatedAt = new Date();
+      await ex.save();
+
+      await this.logNotification({
+        employeeId: ex.employeeId,
+        message: `Exception ${ex._id} escalated before payroll cut-off`,
+        type: 'EXCEPTION_ESCALATED',
+      });
+    }
+
+    if (overdue.length) {
+      this.logger.warn(
+          `Escalated ${overdue.length} exception(s) before payroll cut-off`,
+      );
+    }
   }
 
   async logNotification(entry: {
@@ -143,12 +170,5 @@ export class ExceptionsService {
           'Failed to write notification log: ' + e.message,
       );
     }
-  }
-
-  async findPendingOverdue(cutoffDate: Date) {
-    return this.exceptionModel.find({
-      status: TimeExceptionStatus.PENDING,
-      updatedAt: { $lte: cutoffDate },
-    });
   }
 }

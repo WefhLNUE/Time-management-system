@@ -35,6 +35,7 @@ import { TimeManagementService } from './time-management.service';
 // Cron Jobs
 // ---------------------
 import { ShiftExpiryCron } from './cron/shift-expiry.cron';
+import { ExceptionEscalationCron } from './cron/exception-escalation.cron'; // ✅ ADDED
 
 // ---------------------
 // Models (Time Management)
@@ -62,9 +63,6 @@ import { Department, DepartmentSchema }
 
 import { Position, PositionSchema }
   from '../organization-structure/Models/position.schema';
-
-  //import { employeePenalties, employeePenaltiesSchema }
-  //from '../payroll-execution/Models/employeePenalties.schema';
 
 // ---------------------
 // Module Definition
@@ -115,6 +113,7 @@ import { Position, PositionSchema }
     AttendanceService,
     NotificationService,
     ShiftExpiryCron,
+    ExceptionEscalationCron, // ✅ REGISTERED
     ExceptionsService,
     HolidaysService,
     ReportingService,
