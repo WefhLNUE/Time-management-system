@@ -21,10 +21,10 @@ import { SystemRole } from 'src/employee-profile/enums/employee-profile.enums';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('time-management/exceptions')
 export class ExceptionsController {
-  constructor(private readonly svc: ExceptionsService) {}
+  constructor(private readonly svc: ExceptionsService) { }
 
   // Employees can create exceptions (permissions, corrections, overtime, etc.)
-  
+
   @Roles(SystemRole.DEPARTMENT_EMPLOYEE)
   @Post()
   async create(@Body() dto: CreateExceptionDto) {
@@ -32,19 +32,19 @@ export class ExceptionsController {
   }
 
   // Managers + HR + System Admin can view lists
-  
+
   @Roles(SystemRole.HR_ADMIN,
-        SystemRole.HR_MANAGER,
-        SystemRole.DEPARTMENT_HEAD,
-        SystemRole.SYSTEM_ADMIN
+    SystemRole.HR_MANAGER,
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.SYSTEM_ADMIN
   )
   @Get()
   async list(
-      @Query('status') status?: string,
-      @Query('employeeId') employeeId?: string,
-      @Query('assignedTo') assignedTo?: string,
-      @Query('limit') limit = '50',
-      @Query('skip') skip = '0',
+    @Query('status') status?: string,
+    @Query('employeeId') employeeId?: string,
+    @Query('assignedTo') assignedTo?: string,
+    @Query('limit') limit = '50',
+    @Query('skip') skip = '0',
   ) {
     const q = { status, employeeId, assignedTo };
     return this.svc.findAll(q, { limit: Number(limit), skip: Number(skip) });
@@ -52,11 +52,11 @@ export class ExceptionsController {
 
   // Everyone involved can view a single exception, including the employee
 
-   @Roles(SystemRole.HR_ADMIN,
-        SystemRole.DEPARTMENT_EMPLOYEE,
-        SystemRole.HR_MANAGER,
-        SystemRole.DEPARTMENT_HEAD,
-        SystemRole.SYSTEM_ADMIN
+  @Roles(SystemRole.HR_ADMIN,
+    SystemRole.DEPARTMENT_EMPLOYEE,
+    SystemRole.HR_MANAGER,
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.SYSTEM_ADMIN
   )
   @Get(':id')
   async get(@Param('id') id: string) {
@@ -66,10 +66,10 @@ export class ExceptionsController {
   }
 
   // Updating status is ONLY for approvers (Manager, HR, Admin)
- 
-   @Roles(SystemRole.HR_ADMIN,
-        SystemRole.DEPARTMENT_HEAD,
-        SystemRole.SYSTEM_ADMIN
+
+  @Roles(SystemRole.HR_ADMIN,
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.SYSTEM_ADMIN
   )
   @Put(':id/status')
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateExceptionStatusDto) {

@@ -7,12 +7,12 @@ import { CorrectionRequestStatus } from "./enums/index";
 export type AttendanceCorrectionRequestDocument = HydratedDocument<AttendanceCorrectionRequest>;
 
 @Schema()
-export class AttendanceCorrectionRequest{
-    @Prop({type: Types.ObjectId, ref: 'EmployeeProfile', required: true})
+export class AttendanceCorrectionRequest {
+    @Prop({ type: Types.ObjectId, ref: 'EmployeeProfile', required: true })
     employeeId: Types.ObjectId;
 
-    @Prop({type: Types.ObjectId, ref: 'AttendanceRecord', required: true})
-    attendanceRecord: AttendanceRecord;
+    @Prop({ type: Types.ObjectId, ref: 'AttendanceRecord', required: true })
+    attendanceRecord: Types.ObjectId;
 
     @Prop()
     reason?: string;

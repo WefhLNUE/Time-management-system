@@ -11,25 +11,25 @@ import { SystemRole } from 'src/employee-profile/enums/employee-profile.enums';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('time-management/holidays')
 export class HolidaysController {
-  constructor(private readonly svc: HolidaysService) {}
+  constructor(private readonly svc: HolidaysService) { }
 
   // Only HR Admin + System Admin can create holidays
- 
-   @Roles(SystemRole.HR_ADMIN,
-          SystemRole.SYSTEM_ADMIN
-    )
+
+  @Roles(SystemRole.HR_ADMIN,
+    SystemRole.SYSTEM_ADMIN
+  )
   @Post()
   create(@Body() dto: CreateHolidayDto) {
     return this.svc.createHoliday(dto);
   }
 
   // All employees, managers, HR, admins can view holiday calendar
-  
-   @Roles(SystemRole.HR_ADMIN,
-        SystemRole.HR_MANAGER,
-        SystemRole.DEPARTMENT_EMPLOYEE,
-        SystemRole.DEPARTMENT_HEAD,
-        SystemRole.SYSTEM_ADMIN
+
+  @Roles(SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.DEPARTMENT_EMPLOYEE,
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.SYSTEM_ADMIN
   )
   @Get()
   list() {
@@ -37,12 +37,12 @@ export class HolidaysController {
   }
 
   // Everyone can view a single holiday
-  
-   @Roles(SystemRole.HR_ADMIN,
-        SystemRole.HR_MANAGER,
-        SystemRole.DEPARTMENT_EMPLOYEE,
-        SystemRole.DEPARTMENT_HEAD,
-        SystemRole.SYSTEM_ADMIN
+
+  @Roles(SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.DEPARTMENT_EMPLOYEE,
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.SYSTEM_ADMIN
   )
   @Get(':id')
   async get(@Param('id') id: string) {
@@ -53,8 +53,8 @@ export class HolidaysController {
 
   // Only HR Admin + System Admin can update holidays
 
-   @Roles(SystemRole.HR_ADMIN,
-        SystemRole.SYSTEM_ADMIN
+  @Roles(SystemRole.HR_ADMIN,
+    SystemRole.SYSTEM_ADMIN
   )
   @Put(':id')
   update(@Param('id') id: string, @Body() dto: UpdateHolidayDto) {
@@ -62,9 +62,9 @@ export class HolidaysController {
   }
 
   // Only HR Admin + System Admin can delete holidays
- 
-   @Roles(SystemRole.HR_ADMIN,
-        SystemRole.SYSTEM_ADMIN
+
+  @Roles(SystemRole.HR_ADMIN,
+    SystemRole.SYSTEM_ADMIN
   )
   @Delete(':id')
   remove(@Param('id') id: string) {

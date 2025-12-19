@@ -38,7 +38,7 @@ export class AttendanceService {
     @InjectModel(Position.name)
     private readonly posModel: Model<Position>,
 
-  ) {}
+  ) { }
 
   // ✅ REQUIRED BY AttendanceController
   async findForEmployee(employeeId: string) {
@@ -76,12 +76,12 @@ export class AttendanceService {
       await record.save();
 
       await this.exceptionsSvc.createException({
-  employeeId,
-  attendanceRecordId: record._id.toString(),
-  type: TimeExceptionType.MISSED_PUNCH,
-  reason: 'Invalid punch sequence',
-  assignedTo: employeeId // TEMP: self-assigned for testing
-});
+        employeeId,
+        attendanceRecordId: record._id.toString(),
+        type: TimeExceptionType.MISSED_PUNCH,
+        reason: 'Invalid punch sequence',
+        assignedTo: employeeId // TEMP: self-assigned for testing
+      });
 
 
       return { warning: 'MISSED_PUNCH exception created', record };
@@ -119,8 +119,8 @@ export class AttendanceService {
   computeWorkMinutes(record, shift) {
     if (record.punches.length < 2) return;
 
-    const firstIn = record.punches[0].time;
-    const lastOut = record.punches[record.punches.length - 1].time;
+    const firstIn = record.punches[0].time.getTime();
+    const lastOut = record.punches[record.punches.length - 1].time.getTime();
 
     record.totalWorkMinutes = Math.floor((lastOut - firstIn) / 60000);
   }
@@ -139,13 +139,13 @@ export class AttendanceService {
     if (firstPunch.getTime() > allowed) {
       const minutesLate = Math.floor((firstPunch.getTime() - allowed) / 60000);
 
-    await this.exceptionsSvc.createException({
-  employeeId,
-  attendanceRecordId: record._id.toString(),
-  type: TimeExceptionType.LATE,
-  reason: `Late by ${minutesLate} minutes`,
-  assignedTo: employeeId
-});
+      await this.exceptionsSvc.createException({
+        employeeId,
+        attendanceRecordId: record._id.toString(),
+        type: TimeExceptionType.LATE,
+        reason: `Late by ${minutesLate} minutes`,
+        assignedTo: employeeId
+      });
 
     }
   }

@@ -4,12 +4,12 @@ import { PunchDto } from '../dto/punch.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorator/roles.decorator';
-import { SystemRole } from 'src/employee-profile/enums/employee-profile.enums';
+import { SystemRole } from '../../employee-profile/enums/employee-profile.enums';
 
 @Controller('attendance')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AttendanceController {
-  constructor(private readonly svc: AttendanceService) {}
+  constructor(private readonly svc: AttendanceService) { }
 
   @Get(':employeeId')
   findForEmployee(@Param('employeeId') employeeId: string) {

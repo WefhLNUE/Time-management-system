@@ -2,16 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { TimeExceptionType } from '../Models/enums/index';
+import { ExceptionsService } from './exceptions.service';
 
 @Injectable()
 export class OvertimeService {
   constructor(
     @InjectModel('AttendanceRecord') private readonly attendance: Model<any>,
     @InjectModel('OvertimeRule') private readonly overtimeRule: Model<any>,
-    private readonly exceptionsSvc: any
-  ) {}
+    private readonly exceptionsSvc: ExceptionsService
+  ) { }
 
-  async createRequest(dto) {
+  async createRequest(dto: any) {
     const rule = await this.overtimeRule.findOne({ active: true });
 
     if (!rule) throw new Error('No active overtime rule');

@@ -15,6 +15,10 @@ import { HolidaysController } from './controllers/holidays.controller';
 import { ReportingController } from './controllers/reporting.controller';
 import { NotificationController } from './controllers/notification.controller';
 import { TimeManagementController } from './time-management.controller';
+import { OvertimeController } from './controllers/overtime.controller';
+import { OvertimeRuleController } from './controllers/overtime-rule.controller';
+import { LatenessRuleController } from './controllers/lateness-rule.controller';
+import { CorrectionController } from './controllers/correction.controller';
 
 // ---------------------
 // Services
@@ -30,6 +34,10 @@ import { HolidaysService } from './services/holidays.service';
 import { ReportingService } from './services/reporting.service';
 import { IntegrationService } from './services/integration.service';
 import { TimeManagementService } from './time-management.service';
+import { OvertimeService } from './services/overtime.service';
+import { OvertimeRuleService } from './services/overtime-rule.service';
+import { LatenessRuleService } from './services/lateness-rule.service';
+import { CorrectionService } from './services/correction.service';
 
 // ---------------------
 // Cron Jobs
@@ -103,6 +111,10 @@ import { Position, PositionSchema }
     HolidaysController,
     ReportingController,
     TimeManagementController,
+    OvertimeController,
+    OvertimeRuleController,
+    LatenessRuleController,
+    CorrectionController,
   ],
 
   providers: [
@@ -119,6 +131,10 @@ import { Position, PositionSchema }
     ReportingService,
     IntegrationService,
     TimeManagementService,
+    OvertimeService,
+    OvertimeRuleService,
+    LatenessRuleService,
+    CorrectionService,
   ],
 
   exports: [
@@ -126,6 +142,8 @@ import { Position, PositionSchema }
     HolidaysService,
     ReportingService,
     IntegrationService,
+    OvertimeService,
+    LatenessRuleService,
   ],
 })
-export class TimeManagementModule {}
+export class TimeManagementModule { }

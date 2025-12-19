@@ -16,34 +16,34 @@ import { NotificationService } from '../services/notification.service';
 @Controller('notifications')
 export class NotificationController {
   constructor(
-      private readonly notificationService: NotificationService,
-  ) {}
+    private readonly notificationService: NotificationService,
+  ) { }
 
   @Roles(
-      SystemRole.HR_ADMIN,
-      SystemRole.HR_MANAGER,
-      SystemRole.SYSTEM_ADMIN,
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.SYSTEM_ADMIN,
   )
   @Get()
   async getMyNotifications(@Req() req) {
     return this.notificationService.findForEmployee(
-        req.user.id.toString(),
+      req.user.id.toString(),
     );
   }
 
   @Roles(
-      SystemRole.HR_ADMIN,
-      SystemRole.HR_MANAGER,
-      SystemRole.SYSTEM_ADMIN,
+    SystemRole.HR_ADMIN,
+    SystemRole.HR_MANAGER,
+    SystemRole.SYSTEM_ADMIN,
   )
   @Patch(':id/read')
   async markAsRead(
-      @Param('id') id: string,
-      @Req() req,
+    @Param('id') id: string,
+    @Req() req,
   ) {
     return this.notificationService.markAsRead(
-        id,
-        req.user.id.toString(),
+      id,
+      req.user.id.toString(),
     );
   }
 }
