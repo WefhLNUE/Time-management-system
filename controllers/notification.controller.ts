@@ -1,4 +1,11 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorator/roles.decorator';
@@ -9,25 +16,34 @@ import { NotificationService } from '../services/notification.service';
 @Controller('notifications')
 export class NotificationController {
   constructor(
-    private readonly notificationService: NotificationService,
+      private readonly notificationService: NotificationService,
   ) {}
 
-  /**
-   * 🔔 Notifications for logged-in user
-   * req.user.id === EmployeeProfile._id
-   */
   @Roles(
-    SystemRole.HR_ADMIN,
-    SystemRole.HR_MANAGER,
-    SystemRole.SYSTEM_ADMIN,
+      SystemRole.HR_ADMIN,
+      SystemRole.HR_MANAGER,
+      SystemRole.SYSTEM_ADMIN,
   )
   @Get()
   async getMyNotifications(@Req() req) {
-    // IMPORTANT: this ID must match NotificationLog.to
-    const employeeProfileId = req.user.id;
-
     return this.notificationService.findForEmployee(
-      employeeProfileId.toString(),
+        req.user.id.toString(),
+    );
+  }
+
+  @Roles(
+      SystemRole.HR_ADMIN,
+      SystemRole.HR_MANAGER,
+      SystemRole.SYSTEM_ADMIN,
+  )
+  @Patch(':id/read')
+  async markAsRead(
+      @Param('id') id: string,
+      @Req() req,
+  ) {
+    return this.notificationService.markAsRead(
+        id,
+        req.user.id.toString(),
     );
   }
 }

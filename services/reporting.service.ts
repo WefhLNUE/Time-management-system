@@ -5,69 +5,94 @@ import { Model } from 'mongoose';
 @Injectable()
 export class ReportingService {
   constructor(
-    @InjectModel('TimeException') private readonly exceptionModel: Model<any>,
-    @InjectModel('AttendanceRecord') private readonly attendanceModel: Model<any>,
-    @InjectModel('OvertimeRule') private readonly overtimeRuleModel: Model<any>,
+      @InjectModel('TimeException') private readonly exceptionModel: Model<any>,
+      @InjectModel('AttendanceRecord') private readonly attendanceModel: Model<any>,
   ) {}
 
+  // =============================
+  // Exceptions Summary
+  // =============================
   async exceptionsSummary(from?: string, to?: string) {
     const q: any = {};
     if (from || to) q.createdAt = {};
     if (from) q.createdAt.$gte = new Date(from);
     if (to) q.createdAt.$lte = new Date(to);
-    const total = await this.exceptionModel.countDocuments(q);
-    const byStatus = await this.exceptionModel.aggregate([
+
+    const breakdown = await this.exceptionModel.aggregate([
       { $match: q },
-      { $group: { _id: '$status', count: { $sum: 1 } } },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
     ]);
-    return { total, byStatus };
+
+    const total = breakdown.reduce((s, r) => s + r.count, 0);
+
+    return {
+      total,
+      breakdown,
+    };
   }
 
+  // =============================
+  // Overtime Summary (Payroll)
+  // =============================
   async overtimeSummary(from?: string, to?: string) {
     const q: any = {};
     if (from || to) q.date = {};
     if (from) q.date.$gte = new Date(from);
     if (to) q.date.$lte = new Date(to);
 
-    // This assumes attendance records contain overtime minutes/hours fields.
-    const pipeline = [
-      { $match: q },
+    return this.attendanceModel.aggregate([
+      { $match: { ...q, overtimeMinutes: { $gt: 0 } } },
       {
         $group: {
           _id: '$employeeId',
-          totalOvertime: { $sum: '$overtimeMinutes' },
+          totalOvertimeMinutes: { $sum: '$overtimeMinutes' },
         },
       },
-      { $limit: 1000 },
-    ];
-    const rows = await this.attendanceModel.aggregate(pipeline);
-    return rows;
+    ]);
   }
 
+  // =============================
+  // Lateness Summary
+  // =============================
   async latenessSummary(from?: string, to?: string) {
     const q: any = {};
     if (from || to) q.date = {};
     if (from) q.date.$gte = new Date(from);
     if (to) q.date.$lte = new Date(to);
 
-    const pipeline = [
+    return this.attendanceModel.aggregate([
       { $match: q },
       {
         $group: {
           _id: '$employeeId',
-          lateCount: { $sum: { $cond: ['$isLate', 1, 0] } },
+          lateCount: {
+            $sum: { $cond: ['$isLate', 1, 0] },
+          },
         },
       },
-    ];
-    const rows = await this.attendanceModel.aggregate(pipeline);
-    return rows;
+    ]);
   }
 
-  async dashboardKpis(period?: string) {
-    // simple KPIs
-    const exceptions = await this.exceptionModel.countDocuments();
+  // =============================
+  // Dashboard KPIs
+  // =============================
+  async dashboardKpis() {
+    const total = await this.exceptionModel.countDocuments();
     const approved = await this.exceptionModel.countDocuments({ status: 'APPROVED' });
     const rejected = await this.exceptionModel.countDocuments({ status: 'REJECTED' });
-    return { exceptions, approved, rejected };
+    const pending = await this.exceptionModel.countDocuments({ status: 'PENDING' });
+
+    return {
+      totalExceptions: total,
+      approved,
+      rejected,
+      pending,
+      approvalRate: total ? Math.round((approved / total) * 100) : 0,
+    };
   }
 }
