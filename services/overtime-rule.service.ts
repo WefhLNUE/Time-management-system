@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { OvertimeRule } from '../Models/overtime-rule.schema';
 import { CreateOvertimeRuleDto } from '../dto/create-overtime-rule.dto';
 import { UpdateOvertimeRuleDto } from '../dto/update-overtime-rule.dto';
-
+import { BadRequestException } from '@nestjs/common';
 @Injectable()
 export class OvertimeRuleService {
   constructor(
@@ -12,9 +12,17 @@ export class OvertimeRuleService {
     private readonly overtimeRuleModel: Model<OvertimeRule>,
   ) {}
 
-  create(dto: CreateOvertimeRuleDto) {
-    return this.overtimeRuleModel.create(dto);
+  async create(dto: CreateOvertimeRuleDto) {
+  // Check if an active rule already exists
+  const existing = await this.overtimeRuleModel.findOne({ active: true });
+  if (existing) {
+    throw new BadRequestException(
+      'An active overtime rule already exists. Deactivate it first.'
+    );
   }
+
+  return this.overtimeRuleModel.create(dto);
+}
 
   findAll() {
     return this.overtimeRuleModel.find();
