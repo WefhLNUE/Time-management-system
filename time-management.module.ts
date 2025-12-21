@@ -15,6 +15,7 @@ import { HolidaysController } from './controllers/holidays.controller';
 import { ReportingController } from './controllers/reporting.controller';
 import { NotificationController } from './controllers/notification.controller';
 import { TimeManagementController } from './time-management.controller';
+import { PunchesController } from './controllers/punches.controller';
 
 // ---------------------
 // Services
@@ -30,6 +31,7 @@ import { HolidaysService } from './services/holidays.service';
 import { ReportingService } from './services/reporting.service';
 import { IntegrationService } from './services/integration.service';
 import { TimeManagementService } from './time-management.service';
+import { PunchesService } from './services/punches.service';
 
 // ---------------------
 // Cron Jobs
@@ -103,6 +105,7 @@ import { Position, PositionSchema }
     HolidaysController,
     ReportingController,
     TimeManagementController,
+    PunchesController,
   ],
 
   providers: [
@@ -119,6 +122,7 @@ import { Position, PositionSchema }
     ReportingService,
     IntegrationService,
     TimeManagementService,
+    PunchesService,
   ],
 
   exports: [
@@ -126,6 +130,7 @@ import { Position, PositionSchema }
     HolidaysService,
     ReportingService,
     IntegrationService,
+    PunchesService,
   ],
 })
 export class TimeManagementModule {}
