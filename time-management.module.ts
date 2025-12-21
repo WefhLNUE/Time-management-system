@@ -65,6 +65,8 @@ import { Department, DepartmentSchema }
 
 import { Position, PositionSchema }
   from '../organization-structure/Models/position.schema';
+import { CorrectionRequestController } from './controllers/correction-request.controller';
+import { CorrectionRequestService } from './services/correction-request.service';
 
 // ---------------------
 // Module Definition
@@ -106,6 +108,7 @@ import { Position, PositionSchema }
     ReportingController,
     TimeManagementController,
     PunchesController,
+    CorrectionRequestController,
   ],
 
   providers: [
@@ -123,6 +126,7 @@ import { Position, PositionSchema }
     IntegrationService,
     TimeManagementService,
     PunchesService,
+    CorrectionRequestService,
   ],
 
   exports: [
