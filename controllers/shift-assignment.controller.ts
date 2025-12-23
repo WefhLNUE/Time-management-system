@@ -126,4 +126,15 @@ export class ShiftAssignmentController {
   reject(@Param('id') id: string) {
     return this.svc.reject(id);
   }
+
+  @Roles(
+  SystemRole.HR_ADMIN,
+  SystemRole.HR_MANAGER,
+  SystemRole.SYSTEM_ADMIN
+)
+@Patch(':id/cancel')
+cancel(@Param('id') id: string) {
+  return this.svc.cancel(id);
+}
+
 }

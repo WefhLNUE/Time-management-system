@@ -295,4 +295,40 @@ export class ShiftAssignmentService {
 
     return doc;
   }
+
+  // ---------------------------------------
+// Cancel Assignment (Soft Delete)
+// ---------------------------------------
+async cancel(id: string) {
+  if (!Types.ObjectId.isValid(id)) {
+    throw new BadRequestException('Invalid assignment ID');
+  }
+
+  const doc = await this.model.findById(id);
+  if (!doc) throw new NotFoundException('Assignment not found');
+
+  if (
+    ![
+      ShiftAssignmentStatus.PENDING,
+      ShiftAssignmentStatus.APPROVED,
+    ].includes(doc.status)
+  ) {
+    throw new BadRequestException(
+      'Only pending or approved assignments can be cancelled',
+    );
+  }
+
+  doc.status = ShiftAssignmentStatus.CANCELLED;
+  await doc.save();
+
+  if (doc.employeeId) {
+    await this.notificationSvc.createNotification(
+      doc.employeeId,
+      'Your shift assignment has been cancelled.',
+    );
+  }
+
+  return doc;
+}
+
 }
