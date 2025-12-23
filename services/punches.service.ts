@@ -25,37 +25,30 @@ export class PunchesService {
     ) {}
 
     async getAllPunches(): Promise<PunchAudit[]> {
-        console.log('🔥 PunchesService.getAllPunches() CALLED');
+  const records = await this.attendanceModel
+    .find({ 'punches.0': { $exists: true } }) // ✅ ONLY records with punches
+    .populate('employeeId', 'employeeNumber workEmail')
+    .lean()
+    .exec();
 
-        // ❗ DO NOT filter in Mongo — your data proves this breaks
-        const records = await this.attendanceModel
-            .find()
-            .populate('employeeId', 'employeeNumber workEmail')
-            .exec();
+  const punches: PunchAudit[] = [];
 
-        console.log('📦 Attendance records found:', records.length);
-
-        const punches: PunchAudit[] = [];
-
-        for (const record of records) {
-            if (!record.punches || record.punches.length === 0) continue;
-
-            for (const punch of record.punches) {
-                punches.push({
-                    employeeId: record.employeeId,
-                    time: punch.time,
-                    type: punch.type,
-                    source: 'MANUAL',
-                });
-            }
-        }
-
-        console.log('📊 Total punches returned:', punches.length);
-
-        return punches.sort(
-            (a, b) => b.time.getTime() - a.time.getTime(),
-        );
+  for (const record of records) {
+    for (const punch of record.punches) {
+      punches.push({
+        employeeId: record.employeeId,
+        time: punch.time,
+        type: punch.type,
+        source: 'MANUAL',
+      });
     }
+  }
+
+  return punches.sort(
+    (a, b) => b.time.getTime() - a.time.getTime(),
+  );
+}
+
 
     async createManualPunch(payload: {
         employeeId: string;
