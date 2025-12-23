@@ -50,7 +50,7 @@ export class AttendanceController {
   @Roles(
       SystemRole.DEPARTMENT_EMPLOYEE,
       SystemRole.HR_ADMIN,
-      SystemRole.SYSTEM_ADMIN
+      SystemRole.SYSTEM_ADMIN,
   )
   @Post('punch')
   punch(@Req() req: Request, @Body() body: PunchDto) {
