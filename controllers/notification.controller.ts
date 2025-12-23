@@ -19,14 +19,7 @@ export class NotificationController {
       private readonly notificationService: NotificationService,
   ) {}
 
-  @Roles(
-      SystemRole.HR_ADMIN,
-      SystemRole.HR_MANAGER,
-      SystemRole.SYSTEM_ADMIN,
-      SystemRole.DEPARTMENT_EMPLOYEE,
-      SystemRole.DEPARTMENT_HEAD,
-    
-  )
+  @Roles()
   @Get()
   async getMyNotifications(@Req() req) {
     return this.notificationService.findForEmployee(
@@ -38,7 +31,7 @@ export class NotificationController {
       SystemRole.HR_ADMIN,
       SystemRole.HR_MANAGER,
       SystemRole.SYSTEM_ADMIN,
-      
+
   )
   @Patch(':id/read')
   async markAsRead(
