@@ -23,6 +23,9 @@ export class NotificationController {
       SystemRole.HR_ADMIN,
       SystemRole.HR_MANAGER,
       SystemRole.SYSTEM_ADMIN,
+      SystemRole.DEPARTMENT_EMPLOYEE,
+      SystemRole.DEPARTMENT_HEAD,
+    
   )
   @Get()
   async getMyNotifications(@Req() req) {
