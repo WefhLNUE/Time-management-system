@@ -1,7 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ShiftAssignmentService } from '../services/shift-assignment.service';
 import { CreateShiftAssignmentDto } from '../dto/create-shift-assignment.dto';
-import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorator/roles.decorator';
@@ -14,13 +21,13 @@ export class ShiftAssignmentController {
 
   // ======================================
   // EMPLOYEES LIST (FOR ASSIGNMENT UI)
-  // ⚠ MUST BE ABOVE :id ROUTES
+  // MUST BE ABOVE :id ROUTES
   // ======================================
   @Roles(
-    SystemRole.HR_ADMIN,
-    SystemRole.HR_MANAGER,
-    SystemRole.DEPARTMENT_HEAD,
-    SystemRole.SYSTEM_ADMIN
+      SystemRole.HR_ADMIN,
+      SystemRole.HR_MANAGER,
+      SystemRole.DEPARTMENT_HEAD,
+      SystemRole.SYSTEM_ADMIN,
   )
   @Get('employees')
   getEmployeesForAssignment() {
@@ -31,10 +38,10 @@ export class ShiftAssignmentController {
   // CREATE ASSIGNMENT
   // ======================================
   @Roles(
-    SystemRole.HR_ADMIN,
-    SystemRole.HR_MANAGER,
-    SystemRole.DEPARTMENT_HEAD,
-    SystemRole.SYSTEM_ADMIN
+      SystemRole.HR_ADMIN,
+      SystemRole.HR_MANAGER,
+      SystemRole.DEPARTMENT_HEAD,
+      SystemRole.SYSTEM_ADMIN,
   )
   @Post()
   create(@Body() dto: CreateShiftAssignmentDto) {
@@ -45,9 +52,9 @@ export class ShiftAssignmentController {
   // VIEW ALL ASSIGNMENTS
   // ======================================
   @Roles(
-    SystemRole.HR_ADMIN,
-    SystemRole.HR_MANAGER,
-    SystemRole.SYSTEM_ADMIN
+      SystemRole.HR_ADMIN,
+      SystemRole.HR_MANAGER,
+      SystemRole.SYSTEM_ADMIN,
   )
   @Get()
   findAll() {
@@ -58,11 +65,11 @@ export class ShiftAssignmentController {
   // VIEW ASSIGNMENTS FOR EMPLOYEE
   // ======================================
   @Roles(
-    SystemRole.HR_ADMIN,
-    SystemRole.HR_MANAGER,
-    SystemRole.DEPARTMENT_EMPLOYEE,
-    SystemRole.DEPARTMENT_HEAD,
-    SystemRole.SYSTEM_ADMIN
+      SystemRole.HR_ADMIN,
+      SystemRole.HR_MANAGER,
+      SystemRole.DEPARTMENT_EMPLOYEE,
+      SystemRole.DEPARTMENT_HEAD,
+      SystemRole.SYSTEM_ADMIN,
   )
   @Get('employee/:employeeId')
   findForEmployee(@Param('employeeId') employeeId: string) {
@@ -70,15 +77,14 @@ export class ShiftAssignmentController {
   }
 
   // ======================================
-  // VIEW SINGLE ASSIGNMENT (EDIT PAGE)
-  // ⚠ MUST COME AFTER STATIC ROUTES
+  // VIEW SINGLE ASSIGNMENT
   // ======================================
   @Roles(
-    SystemRole.HR_ADMIN,
-    SystemRole.HR_MANAGER,
-    SystemRole.DEPARTMENT_EMPLOYEE,
-    SystemRole.DEPARTMENT_HEAD,
-    SystemRole.SYSTEM_ADMIN
+      SystemRole.HR_ADMIN,
+      SystemRole.HR_MANAGER,
+      SystemRole.DEPARTMENT_EMPLOYEE,
+      SystemRole.DEPARTMENT_HEAD,
+      SystemRole.SYSTEM_ADMIN,
   )
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -89,9 +95,9 @@ export class ShiftAssignmentController {
   // UPDATE ASSIGNMENT (ONLY PENDING)
   // ======================================
   @Roles(
-    SystemRole.HR_ADMIN,
-    SystemRole.HR_MANAGER,
-    SystemRole.SYSTEM_ADMIN
+      SystemRole.HR_ADMIN,
+      SystemRole.HR_MANAGER,
+      SystemRole.SYSTEM_ADMIN,
   )
   @Patch(':id')
   update(@Param('id') id: string, @Body() body: any) {
@@ -102,9 +108,9 @@ export class ShiftAssignmentController {
   // APPROVAL WORKFLOW
   // ======================================
   @Roles(
-    SystemRole.HR_ADMIN,
-    SystemRole.HR_MANAGER,
-    SystemRole.SYSTEM_ADMIN
+      SystemRole.HR_ADMIN,
+      SystemRole.HR_MANAGER,
+      SystemRole.SYSTEM_ADMIN,
   )
   @Patch(':id/approve')
   approve(@Param('id') id: string) {
@@ -112,9 +118,9 @@ export class ShiftAssignmentController {
   }
 
   @Roles(
-    SystemRole.HR_ADMIN,
-    SystemRole.HR_MANAGER,
-    SystemRole.SYSTEM_ADMIN
+      SystemRole.HR_ADMIN,
+      SystemRole.HR_MANAGER,
+      SystemRole.SYSTEM_ADMIN,
   )
   @Patch(':id/reject')
   reject(@Param('id') id: string) {

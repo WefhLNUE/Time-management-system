@@ -6,20 +6,19 @@ import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorator/roles.decorator';
 import { SystemRole } from '../../employee-profile/enums/employee-profile.enums';
 
-@Controller('attendance/overtime')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('attendance/overtime')
 export class OvertimeController {
   constructor(private readonly svc: OvertimeService) {}
 
-  @Roles(SystemRole.DEPARTMENT_EMPLOYEE, SystemRole.DEPARTMENT_HEAD)
   @Post()
+  @Roles(SystemRole.DEPARTMENT_EMPLOYEE)
   create(@Body() dto: OvertimeRequestDto) {
     return this.svc.createRequest(dto);
   }
 
-  
-  @Roles(SystemRole.DEPARTMENT_HEAD, SystemRole.HR_MANAGER)
   @Patch(':id')
+  @Roles(SystemRole.DEPARTMENT_HEAD, SystemRole.HR_MANAGER, SystemRole.HR_ADMIN)
   review(@Param('id') id: string, @Body() dto: any) {
     return this.svc.review(id, dto);
   }

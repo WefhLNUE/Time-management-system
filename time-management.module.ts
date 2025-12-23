@@ -15,7 +15,10 @@ import { HolidaysController } from './controllers/holidays.controller';
 import { ReportingController } from './controllers/reporting.controller';
 import { NotificationController } from './controllers/notification.controller';
 import { TimeManagementController } from './time-management.controller';
-
+import { PunchesController } from './controllers/punches.controller';
+import { LatenessRuleController } from './controllers/lateness-rule.controller';
+import { OvertimeRuleController } from './controllers/overtime-rule.controller';
+import { OvertimeController } from './controllers/overtime.controller';
 // ---------------------
 // Services
 // ---------------------
@@ -30,6 +33,10 @@ import { HolidaysService } from './services/holidays.service';
 import { ReportingService } from './services/reporting.service';
 import { IntegrationService } from './services/integration.service';
 import { TimeManagementService } from './time-management.service';
+import { PunchesService } from './services/punches.service';
+import { LatenessRuleService } from './services/lateness-rule.service';
+import { OvertimeRuleService } from './services/overtime-rule.service';
+import { OvertimeService } from './services/overtime.service';
 
 // ---------------------
 // Cron Jobs
@@ -63,6 +70,8 @@ import { Department, DepartmentSchema }
 
 import { Position, PositionSchema }
   from '../organization-structure/Models/position.schema';
+import { CorrectionRequestController } from './controllers/correction-request.controller';
+import { CorrectionRequestService } from './services/correction-request.service';
 
 // ---------------------
 // Module Definition
@@ -103,6 +112,11 @@ import { Position, PositionSchema }
     HolidaysController,
     ReportingController,
     TimeManagementController,
+    PunchesController,
+    CorrectionRequestController,
+    LatenessRuleController,
+    OvertimeRuleController,
+    OvertimeController,
   ],
 
   providers: [
@@ -119,6 +133,11 @@ import { Position, PositionSchema }
     ReportingService,
     IntegrationService,
     TimeManagementService,
+    PunchesService,
+    CorrectionRequestService,
+    LatenessRuleService,
+    OvertimeRuleService,
+    OvertimeService,
   ],
 
   exports: [
@@ -126,6 +145,7 @@ import { Position, PositionSchema }
     HolidaysService,
     ReportingService,
     IntegrationService,
+    PunchesService,
   ],
 })
 export class TimeManagementModule {}

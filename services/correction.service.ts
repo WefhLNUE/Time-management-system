@@ -12,35 +12,50 @@ export class CorrectionService {
       private readonly attendance: Model<any>,
   ) {}
 
-  async createRequest(dto: any) {
-    const req = await this.correction.create(dto);
+ async createRequest(dto: any) {
+  const req = await this.correction.create({
+    employeeId: new Types.ObjectId(dto.employeeId),
+    attendanceRecord: new Types.ObjectId(dto.attendanceRecordId),
+    reason: dto.reason,
+    status: 'SUBMITTED',
+  });
 
-    const rec = await this.attendance.findById(dto.attendanceRecordId);
-    if (rec) {
-      rec.finalisedForPayroll = false;
-      await rec.save();
-    }
-
-    return req;
+  const rec = await this.attendance.findById(dto.attendanceRecordId);
+  if (rec) {
+    rec.finalisedForPayroll = false;
+    await rec.save();
   }
+
+  return req;
+}
+
 
   async reviewRequest(id: string, dto: any) {
-    const req = await this.correction.findById(id);
-    if (!req) return null;
+  const req = await this.correction.findById(id);
+  if (!req) return null;
 
-    req.status = dto.status;
-    req.managerComment = dto.managerComment || null;
-    await req.save();
-
-    const rec = await this.attendance.findById(req.attendanceRecord);
-    if (rec && dto.status === 'APPROVED') {
-      rec.hasMissedPunch = false;
-      rec.finalisedForPayroll = true;
-      await rec.save();
-    }
-
-    return req;
+  if (req.status !== 'SUBMITTED') {
+    throw new Error('Only submitted requests can be reviewed');
   }
+
+  if (!['APPROVED', 'REJECTED'].includes(dto.status)) {
+    throw new Error('Invalid review status');
+  }
+
+  req.status = dto.status;
+  req.managerComment = dto.managerComment || null;
+  await req.save();
+
+  const rec = await this.attendance.findById(req.attendanceRecord);
+  if (rec && dto.status === 'APPROVED') {
+    rec.hasMissedPunch = false;
+    rec.finalisedForPayroll = true;
+    await rec.save();
+  }
+
+  return req;
+}
+
 
   // 🔬 FULL DEBUG VERSION — DO NOT MODIFY
   async findAll() {

@@ -1,113 +1,119 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
-import { AttendanceRecord } from '../Models/attendance-record.schema';
-import { ShiftAssignment } from '../Models/shift-assignment.schema';
-import { Shift } from '../Models/shift.schema';
-import { LatenessRule } from '../Models/lateness-rule.schema';
+import {
+  AttendanceRecord,
+  AttendanceRecordDocument,
+} from '../Models/attendance-record.schema';
 
-import { TimeExceptionType } from '../Models/enums/index';
-import { ExceptionsService } from '../services/exceptions.service';
+import { TimeExceptionType, ShiftAssignmentStatus } from '../Models/enums';
+import { ExceptionsService } from './exceptions.service';
 import { PunchDto } from '../dto/punch.dto';
 
-// ---------------------------
-import { EmployeeProfile } from '../../employee-profile/Models/employee-profile.schema';
-import { Department } from '../../organization-structure/Models/department.schema';
-import { Position } from '../../organization-structure/Models/position.schema';
-// ---------------------------
+import { LatenessRule } from '../Models/lateness-rule.schema';
+import { OvertimeRule } from '../Models/overtime-rule.schema';
+import { ShiftAssignment } from '../Models/shift-assignment.schema';
+import { Shift } from '../Models/shift.schema';
 
 @Injectable()
 export class AttendanceService {
   constructor(
-    @InjectModel('AttendanceRecord') private readonly attendance: Model<AttendanceRecord>,
-    @InjectModel('ShiftAssignment') private readonly assignment: Model<ShiftAssignment>,
-    @InjectModel('Shift') private readonly shiftModel: Model<Shift>,
-    @InjectModel('LatenessRule') private readonly latenessModel: Model<LatenessRule>,
+      @InjectModel('AttendanceRecord')
+      private readonly attendance: Model<AttendanceRecordDocument>,
 
-    // Person C dependency
-    private readonly exceptionsSvc: ExceptionsService,
+      @InjectModel(LatenessRule.name)
+      private readonly latenessRuleModel: Model<LatenessRule>,
 
-    // Injected external repos (for later use)
-    @InjectModel(EmployeeProfile.name)
-    private readonly employeeModel: Model<EmployeeProfile>,
+      @InjectModel(OvertimeRule.name)
+      private readonly overtimeRuleModel: Model<OvertimeRule>,
 
-    @InjectModel(Department.name)
-    private readonly deptModel: Model<Department>,
+      @InjectModel(ShiftAssignment.name)
+      private readonly assignmentModel: Model<ShiftAssignment>,
 
-    @InjectModel(Position.name)
-    private readonly posModel: Model<Position>,
-
+      private readonly exceptionsSvc: ExceptionsService,
   ) {}
 
-  // ✅ REQUIRED BY AttendanceController
   async findForEmployee(employeeId: string) {
     return this.attendance
-      .find({ employeeId })
-      .sort({ day: -1 })
-      .lean();
+        .find({ employeeId })
+        .sort({ _id: -1 })
+        .lean();
   }
 
+  // =====================================================
+  // ✅ CORRECT PUNCH HANDLING (1970 FIXED)
+  // =====================================================
   async processPunch(dto: PunchDto) {
     const { employeeId, punchType, time } = dto;
+
     const timestamp = new Date(time);
-    const day = new Date(timestamp.toDateString());
 
-    let record = await this.attendance.findOne({ employeeId, day });
+    if (isNaN(timestamp.getTime())) {
+      throw new Error('Invalid punch timestamp');
+    }
 
-    if (!record) {
+    let record =
+        await this.attendance.findOne({ employeeId }).sort({ _id: -1 });
+
+    if (!record || record.punches.length % 2 === 0) {
       record = await this.attendance.create({
         employeeId,
         punches: [],
-        day,
         totalWorkMinutes: 0,
         hasMissedPunch: false,
         finalisedForPayroll: false,
       });
     }
 
-    // Append punch
-    record.punches.push({ type: punchType, time: timestamp });
-    await record.save();
-
-    // Validate IN/OUT sequence
-    if (!this.validateSequence(record.punches)) {
-      record.hasMissedPunch = true;
-      await record.save();
-
-      await this.exceptionsSvc.createException({
-  employeeId,
-  attendanceRecordId: record._id.toString(),
-  type: TimeExceptionType.MISSED_PUNCH,
-  reason: 'Invalid punch sequence',
-  assignedTo: employeeId // TEMP: self-assigned for testing
-});
-
-
-      return { warning: 'MISSED_PUNCH exception created', record };
-    }
-
-    // Get shift assignment
-    const assignment = await this.assignment.findOne({
-      employeeId,
-      startDate: { $lte: day },
-      $or: [{ endDate: null }, { endDate: { $gte: day } }],
+    record.punches.push({
+      type: punchType,
+      time: timestamp,
     });
 
-    if (!assignment) return record;
+    const isValid = this.validateSequence(record.punches);
+    if (!isValid) {
+      record.hasMissedPunch = true;
 
-    const shift = await this.shiftModel.findById(assignment.shiftId);
+      await this.exceptionsSvc.createException({
+        employeeId,
+        attendanceRecordId: record._id.toString(),
+        type: TimeExceptionType.MISSED_PUNCH,
+        reason: 'Invalid IN/OUT sequence',
+        assignedTo: employeeId,
+      });
 
-    this.computeWorkMinutes(record, shift);
+      await record.save();
+      return record;
+    }
 
-    const latenessRule = await this.latenessModel.findOne({ active: true });
-    await this.applyLateness(record, shift, latenessRule, employeeId);
+    record.hasMissedPunch = false;
+
+    const assignment = await this.getActiveAssignment(employeeId, timestamp);
+    const shift = assignment?.shiftId as Shift | undefined;
+
+    if (punchType === 'IN' && record.punches.length === 1 && shift) {
+      await this.handleLateness(employeeId, record, timestamp, shift);
+    }
+
+    if (record.punches.length >= 2) {
+      const firstIn = record.punches[0].time;
+      const lastOut = record.punches[record.punches.length - 1].time;
+
+      record.totalWorkMinutes = Math.floor(
+          (lastOut.getTime() - firstIn.getTime()) / 60000,
+      );
+
+      if (punchType === 'OUT' && shift) {
+        await this.handleOvertime(employeeId, record, lastOut, shift);
+      }
+    }
 
     await record.save();
     return record;
   }
 
-  validateSequence(punches) {
+  validateSequence(punches: { type: string }[]) {
     let expected = 'IN';
     for (const p of punches) {
       if (p.type !== expected) return false;
@@ -116,37 +122,84 @@ export class AttendanceService {
     return true;
   }
 
-  computeWorkMinutes(record, shift) {
-    if (record.punches.length < 2) return;
-
-    const firstIn = record.punches[0].time;
-    const lastOut = record.punches[record.punches.length - 1].time;
-
-    record.totalWorkMinutes = Math.floor((lastOut - firstIn) / 60000);
+  private async getActiveAssignment(employeeId: string, date: Date) {
+    return this.assignmentModel
+        .findOne({
+          employeeId,
+          status: ShiftAssignmentStatus.APPROVED,
+          startDate: { $lte: date },
+          $or: [{ endDate: null }, { endDate: { $gte: date } }],
+        })
+        .populate('shiftId')
+        .lean();
   }
 
-  async applyLateness(record, shift, rule, employeeId) {
-    if (!rule || record.punches.length === 0) return;
+  private async handleLateness(
+      employeeId: string,
+      record: AttendanceRecordDocument,
+      actualIn: Date,
+      shift: Shift,
+  ) {
+    const latenessRule = await this.latenessRuleModel.findOne({ active: true });
 
-    const firstPunch = record.punches[0].time;
+    const shiftStart = this.buildTime(actualIn, shift.startTime);
+    const totalGrace =
+        (shift.graceInMinutes ?? 0) +
+        (latenessRule?.gracePeriodMinutes ?? 0);
 
-    const shiftStart = new Date(firstPunch);
-    const [h, m] = shift.startTime.split(':');
-    shiftStart.setHours(Number(h), Number(m));
+    const lateMinutes = Math.floor(
+        (actualIn.getTime() - shiftStart.getTime()) / 60000,
+    );
 
-    const allowed = shiftStart.getTime() + rule.gracePeriodMinutes * 60000;
-
-    if (firstPunch.getTime() > allowed) {
-      const minutesLate = Math.floor((firstPunch.getTime() - allowed) / 60000);
+    if (lateMinutes <= totalGrace) return;
 
     await this.exceptionsSvc.createException({
-  employeeId,
-  attendanceRecordId: record._id.toString(),
-  type: TimeExceptionType.LATE,
-  reason: `Late by ${minutesLate} minutes`,
-  assignedTo: employeeId
-});
+      employeeId,
+      attendanceRecordId: record._id.toString(),
+      type: TimeExceptionType.LATE,
+      reason: `Late by ${lateMinutes - totalGrace} minutes`,
+      assignedTo: employeeId,
+    });
+  }
 
+  private async handleOvertime(
+      employeeId: string,
+      record: AttendanceRecordDocument,
+      actualOut: Date,
+      shift: Shift,
+  ) {
+    const overtimeRule = await this.overtimeRuleModel.findOne({ active: true });
+    if (!overtimeRule) return;
+
+    let shiftEnd = this.buildTime(actualOut, shift.endTime);
+
+    if (shift.endTime <= shift.startTime) {
+      shiftEnd.setDate(shiftEnd.getDate() + 1);
     }
+
+    shiftEnd.setMinutes(
+        shiftEnd.getMinutes() + (shift.graceOutMinutes ?? 0),
+    );
+
+    const overtimeMinutes = Math.floor(
+        (actualOut.getTime() - shiftEnd.getTime()) / 60000,
+    );
+
+    if (overtimeMinutes <= 0) return;
+
+    await this.exceptionsSvc.createException({
+      employeeId,
+      attendanceRecordId: record._id.toString(),
+      type: TimeExceptionType.OVERTIME_REQUEST,
+      reason: `Overtime ${overtimeMinutes} minutes`,
+      assignedTo: employeeId,
+    });
+  }
+
+  private buildTime(base: Date, time: string) {
+    const [h, m] = time.split(':').map(Number);
+    const d = new Date(base);
+    d.setHours(h, m, 0, 0);
+    return d;
   }
 }

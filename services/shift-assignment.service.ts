@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { ShiftAssignmentDocument } from '../Models/shift-assignment.schema';
 import { CreateShiftAssignmentDto } from '../dto/create-shift-assignment.dto';
@@ -14,24 +15,30 @@ import { EmployeeProfile } from '../../employee-profile/Models/employee-profile.
 import { Department } from '../../organization-structure/Models/department.schema';
 import { Position } from '../../organization-structure/Models/position.schema';
 import { ShiftAssignmentStatus } from '../Models/enums';
-import { Cron, CronExpression } from '@nestjs/schedule';
+
+type LeanEmployee = {
+  _id: Types.ObjectId;
+  status?: string;
+  primaryDepartmentId?: any;
+  primaryPositionId?: any;
+};
 
 @Injectable()
 export class ShiftAssignmentService {
   constructor(
-    @InjectModel('ShiftAssignment')
-    private readonly model: Model<ShiftAssignmentDocument>,
+      @InjectModel('ShiftAssignment')
+      private readonly model: Model<ShiftAssignmentDocument>,
 
-    private readonly notificationSvc: NotificationService,
+      private readonly notificationSvc: NotificationService,
 
-    @InjectModel(EmployeeProfile.name)
-    private readonly employeeModel: Model<any>,
+      @InjectModel(EmployeeProfile.name)
+      private readonly employeeModel: Model<any>,
 
-    @InjectModel(Department.name)
-    private readonly deptModel: Model<any>,
+      @InjectModel(Department.name)
+      private readonly deptModel: Model<any>,
 
-    @InjectModel(Position.name)
-    private readonly positionModel: Model<any>,
+      @InjectModel(Position.name)
+      private readonly positionModel: Model<any>,
   ) {}
 
   // ---------------------------------------
@@ -48,8 +55,8 @@ export class ShiftAssignmentService {
     if (typeof value === 'string') {
       const trimmed = value.trim();
       return Types.ObjectId.isValid(trimmed)
-        ? new Types.ObjectId(trimmed)
-        : null;
+          ? new Types.ObjectId(trimmed)
+          : null;
     }
 
     return null;
@@ -62,10 +69,12 @@ export class ShiftAssignmentService {
     const s = new Date(startDate).getTime();
     const e = endDate ? new Date(endDate).getTime() : Infinity;
     const es = new Date(existing.startDate).getTime();
-    const ee = existing.endDate ? new Date(existing.endDate).getTime() : Infinity;
+    const ee = existing.endDate
+        ? new Date(existing.endDate).getTime()
+        : Infinity;
+
     return !(e < es || s > ee);
   }
-
 
   // ---------------------------------------
   // Create Assignment (PENDING)
@@ -74,49 +83,29 @@ export class ShiftAssignmentService {
     const employeeId = this.normalizeObjectId(dto.employeeId);
     const shiftId = this.normalizeObjectId(dto.shiftId);
 
-    if (!employeeId) {
-      throw new BadRequestException('Invalid employee ID');
-    }
-
-    if (!shiftId) {
-      throw new BadRequestException('Invalid shift ID');
-    }
+    if (!employeeId) throw new BadRequestException('Invalid employee ID');
+    if (!shiftId) throw new BadRequestException('Invalid shift ID');
 
     const employee = (await this.employeeModel
-      .findById(employeeId)
-      .lean()
-      .exec()) as {
-      _id: any;
-      primaryDepartmentId?: any;
-      primaryPositionId?: any;
-    } | null;
+        .findById(employeeId)
+        .lean()
+        .exec()) as LeanEmployee | null;
 
     if (!employee) throw new NotFoundException('Employee not found');
+    if (employee.status !== 'ACTIVE') {
+      throw new BadRequestException('Employee is not active');
+    }
 
-    // derive org data from employee profile
-    const departmentId =
-  employee.primaryDepartmentId &&
-  Types.ObjectId.isValid(String(employee.primaryDepartmentId).trim())
-    ? new Types.ObjectId(String(employee.primaryDepartmentId).trim())
-    : undefined;
-
-const positionId =
-  employee.primaryPositionId &&
-  Types.ObjectId.isValid(String(employee.primaryPositionId).trim())
-    ? new Types.ObjectId(String(employee.primaryPositionId).trim())
-    : undefined;
-
-    
-
-    if (employee.primaryDepartmentId && !departmentId) {
+    if (
+        !Types.ObjectId.isValid(String(employee.primaryDepartmentId)) ||
+        !Types.ObjectId.isValid(String(employee.primaryPositionId))
+    ) {
       throw new BadRequestException(
-        'Invalid department reference on employee',
+          'Employee is not fully configured for assignment',
       );
     }
 
-
-
-    const existing = await this.model.find({
+    const existingAssignments = await this.model.find({
       employeeId,
       status: {
         $in: [
@@ -126,10 +115,12 @@ const positionId =
       },
     });
 
-    for (const ex of existing) {
+    for (const ex of existingAssignments) {
       if (this.overlaps(ex, dto.startDate, dto.endDate)) {
         throw new BadRequestException(
-          'Overlapping assignment exists for employee',
+            `Overlapping assignment exists (${ex.startDate} → ${
+                ex.endDate ?? 'open'
+            })`,
         );
       }
     }
@@ -139,33 +130,38 @@ const positionId =
       shiftId,
       startDate: dto.startDate,
       endDate: dto.endDate,
-      departmentId: departmentId ?? undefined,
-      positionId: positionId ?? undefined,
+      departmentId: employee.primaryDepartmentId,
+      positionId: employee.primaryPositionId,
       status: ShiftAssignmentStatus.PENDING,
     });
   }
 
   // ---------------------------------------
-  // Employees for assignment selection
+  // EMPLOYEES FOR ASSIGNMENT (FINAL FIX)
   // ---------------------------------------
   async getEmployeesForAssignment() {
     return this.employeeModel
-      .find(
-        { status: 'ACTIVE' },
-        {
-          _id: 1,
-          employeeNumber: 1,
-          workEmail: 1,
-          firstName: 1,
-          lastName: 1,
-          primaryDepartmentId: 1,
-          primaryPositionId: 1,
-        },
-      )
-      .populate([
-  { path: 'primaryDepartmentId', select: 'name' },
-  // ❌ DO NOT populate primaryPositionId
-    ]).lean();
+        .find(
+            {
+              status: 'ACTIVE',
+              primaryDepartmentId: { $type: 'objectId' },
+              primaryPositionId: { $type: 'objectId' },
+            },
+            {
+              _id: 1,
+              employeeNumber: 1,
+              workEmail: 1,
+              firstName: 1,
+              lastName: 1,
+              primaryDepartmentId: 1,
+              primaryPositionId: 1,
+            },
+        )
+        .populate([
+          { path: 'primaryDepartmentId', select: 'name' },
+          { path: 'primaryPositionId', select: 'name' },
+        ])
+        .lean();
   }
 
   // ---------------------------------------
@@ -181,15 +177,17 @@ const positionId =
       throw new BadRequestException('Invalid employee ID');
     }
 
-    return this.model.find({
-      employeeId: normalizedId,
-      status: {
-        $in: [
-          ShiftAssignmentStatus.PENDING,
-          ShiftAssignmentStatus.APPROVED,
-        ],
-      },
-    }).lean();
+    return this.model
+        .find({
+          employeeId: normalizedId,
+          status: {
+            $in: [
+              ShiftAssignmentStatus.PENDING,
+              ShiftAssignmentStatus.APPROVED,
+            ],
+          },
+        })
+        .lean();
   }
 
   async findOne(id: string) {
@@ -198,9 +196,9 @@ const positionId =
     }
 
     const doc = await this.model
-      .findById(id)
-      .populate(['shiftId'])
-      .lean();
+        .findById(id)
+        .populate(['shiftId'])
+        .lean();
 
     if (!doc) throw new NotFoundException('Assignment not found');
     return doc;
@@ -224,8 +222,8 @@ const positionId =
 
       if (assignment.employeeId) {
         await this.notificationSvc.createNotification(
-          assignment.employeeId,
-          'Your shift assignment has expired.',
+            assignment.employeeId,
+            'Your shift assignment has expired.',
         );
       }
     }
@@ -240,13 +238,13 @@ const positionId =
 
     if (existing.status !== ShiftAssignmentStatus.PENDING) {
       throw new BadRequestException(
-        'Only pending assignments can be edited',
+          'Only pending assignments can be edited',
       );
     }
 
     return this.model
-      .findByIdAndUpdate(id, patch, { new: true })
-      .lean();
+        .findByIdAndUpdate(id, patch, { new: true })
+        .lean();
   }
 
   // ---------------------------------------
@@ -258,7 +256,7 @@ const positionId =
 
     if (doc.status !== ShiftAssignmentStatus.PENDING) {
       throw new BadRequestException(
-        'Only pending assignments can be approved',
+          'Only pending assignments can be approved',
       );
     }
 
@@ -267,8 +265,8 @@ const positionId =
 
     if (doc.employeeId) {
       await this.notificationSvc.createNotification(
-        doc.employeeId,
-        'Your shift assignment has been approved.',
+          doc.employeeId,
+          'Your shift assignment has been approved.',
       );
     }
 
@@ -281,7 +279,7 @@ const positionId =
 
     if (doc.status !== ShiftAssignmentStatus.PENDING) {
       throw new BadRequestException(
-        'Only pending assignments can be cancelled',
+          'Only pending assignments can be cancelled',
       );
     }
 
@@ -290,8 +288,8 @@ const positionId =
 
     if (doc.employeeId) {
       await this.notificationSvc.createNotification(
-        doc.employeeId,
-        'Your shift assignment has been cancelled.',
+          doc.employeeId,
+          'Your shift assignment has been cancelled.',
       );
     }
 
