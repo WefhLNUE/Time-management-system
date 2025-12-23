@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { ShiftAssignmentDocument } from '../Models/shift-assignment.schema';
 import { CreateShiftAssignmentDto } from '../dto/create-shift-assignment.dto';
@@ -14,7 +15,6 @@ import { EmployeeProfile } from '../../employee-profile/Models/employee-profile.
 import { Department } from '../../organization-structure/Models/department.schema';
 import { Position } from '../../organization-structure/Models/position.schema';
 import { ShiftAssignmentStatus } from '../Models/enums';
-import { Cron, CronExpression } from '@nestjs/schedule';
 
 type LeanEmployee = {
   _id: Types.ObjectId;
@@ -83,43 +83,25 @@ export class ShiftAssignmentService {
     const employeeId = this.normalizeObjectId(dto.employeeId);
     const shiftId = this.normalizeObjectId(dto.shiftId);
 
-    if (!employeeId) {
-      throw new BadRequestException('Invalid employee ID');
-    }
-
-    if (!shiftId) {
-      throw new BadRequestException('Invalid shift ID');
-    }
+    if (!employeeId) throw new BadRequestException('Invalid employee ID');
+    if (!shiftId) throw new BadRequestException('Invalid shift ID');
 
     const employee = (await this.employeeModel
         .findById(employeeId)
         .lean()
         .exec()) as LeanEmployee | null;
 
-    if (!employee) {
-      throw new NotFoundException('Employee not found');
-    }
-
-    // ✅ TS-safe status check
-    if (employee.status && employee.status !== 'ACTIVE') {
+    if (!employee) throw new NotFoundException('Employee not found');
+    if (employee.status !== 'ACTIVE') {
       throw new BadRequestException('Employee is not active');
     }
 
-    const departmentId =
-        employee.primaryDepartmentId &&
-        Types.ObjectId.isValid(String(employee.primaryDepartmentId).trim())
-            ? new Types.ObjectId(String(employee.primaryDepartmentId).trim())
-            : undefined;
-
-    const positionId =
-        employee.primaryPositionId &&
-        Types.ObjectId.isValid(String(employee.primaryPositionId).trim())
-            ? new Types.ObjectId(String(employee.primaryPositionId).trim())
-            : undefined;
-
-    if (employee.primaryDepartmentId && !departmentId) {
+    if (
+        !Types.ObjectId.isValid(String(employee.primaryDepartmentId)) ||
+        !Types.ObjectId.isValid(String(employee.primaryPositionId))
+    ) {
       throw new BadRequestException(
-          'Invalid department reference on employee',
+          'Employee is not fully configured for assignment',
       );
     }
 
@@ -148,19 +130,23 @@ export class ShiftAssignmentService {
       shiftId,
       startDate: dto.startDate,
       endDate: dto.endDate,
-      departmentId: departmentId ?? undefined,
-      positionId: positionId ?? undefined,
+      departmentId: employee.primaryDepartmentId,
+      positionId: employee.primaryPositionId,
       status: ShiftAssignmentStatus.PENDING,
     });
   }
 
   // ---------------------------------------
-  // Employees for assignment selection
+  // EMPLOYEES FOR ASSIGNMENT (FINAL FIX)
   // ---------------------------------------
   async getEmployeesForAssignment() {
     return this.employeeModel
         .find(
-            { status: 'ACTIVE' },
+            {
+              status: 'ACTIVE',
+              primaryDepartmentId: { $type: 'objectId' },
+              primaryPositionId: { $type: 'objectId' },
+            },
             {
               _id: 1,
               employeeNumber: 1,
@@ -171,7 +157,10 @@ export class ShiftAssignmentService {
               primaryPositionId: 1,
             },
         )
-        .populate([{ path: 'primaryDepartmentId', select: 'name' }])
+        .populate([
+          { path: 'primaryDepartmentId', select: 'name' },
+          { path: 'primaryPositionId', select: 'name' },
+        ])
         .lean();
   }
 
@@ -306,4 +295,40 @@ export class ShiftAssignmentService {
 
     return doc;
   }
+
+  // ---------------------------------------
+// Cancel Assignment (Soft Delete)
+// ---------------------------------------
+async cancel(id: string) {
+  if (!Types.ObjectId.isValid(id)) {
+    throw new BadRequestException('Invalid assignment ID');
+  }
+
+  const doc = await this.model.findById(id);
+  if (!doc) throw new NotFoundException('Assignment not found');
+
+  if (
+    ![
+      ShiftAssignmentStatus.PENDING,
+      ShiftAssignmentStatus.APPROVED,
+    ].includes(doc.status)
+  ) {
+    throw new BadRequestException(
+      'Only pending or approved assignments can be cancelled',
+    );
+  }
+
+  doc.status = ShiftAssignmentStatus.CANCELLED;
+  await doc.save();
+
+  if (doc.employeeId) {
+    await this.notificationSvc.createNotification(
+      doc.employeeId,
+      'Your shift assignment has been cancelled.',
+    );
+  }
+
+  return doc;
+}
+
 }

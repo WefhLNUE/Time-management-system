@@ -36,7 +36,8 @@ export class ExceptionsController {
   @Roles(SystemRole.HR_ADMIN,
         SystemRole.HR_MANAGER,
         SystemRole.DEPARTMENT_HEAD,
-        SystemRole.SYSTEM_ADMIN
+        SystemRole.SYSTEM_ADMIN,
+        SystemRole.DEPARTMENT_EMPLOYEE
   )
   @Get()
   async list(

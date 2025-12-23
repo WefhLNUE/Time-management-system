@@ -6,15 +6,28 @@ import {
   UpdateExceptionStatusDto,
   TimeExceptionStatus,
 } from '../dto/update-exception-status.dto';
+import { AttendanceRecord } from '../Models/attendance-record.schema';
+import { LatenessRule } from '../Models/lateness-rule.schema';
+import { TimeExceptionType } from '../Models/enums';
 
 @Injectable()
 export class ExceptionsService {
   private readonly logger = new Logger(ExceptionsService.name);
 
   constructor(
-      @InjectModel('TimeException') private readonly exceptionModel: Model<any>,
-      @InjectModel('NotificationLog') private readonly notificationModel: Model<any>,
-  ) {}
+  @InjectModel('TimeException')
+  private readonly exceptionModel: Model<any>,
+
+  @InjectModel('NotificationLog')
+  private readonly notificationModel: Model<any>,
+
+  @InjectModel(AttendanceRecord.name)
+  private readonly attendanceModel: Model<AttendanceRecord>,
+
+  @InjectModel(LatenessRule.name)
+  private readonly latenessRuleModel: Model<LatenessRule>,
+) {}
+
 
   async createException(dto: CreateExceptionDto) {
     if (!dto.employeeId) {
@@ -77,41 +90,83 @@ export class ExceptionsService {
     return this.exceptionModel.findById(id).lean();
   }
 
-  async updateStatus(id: string, dto: UpdateExceptionStatusDto) {
-    const doc = await this.exceptionModel.findById(id);
-    if (!doc) throw new BadRequestException('Exception not found');
+async updateStatus(id: string, dto: UpdateExceptionStatusDto) {
+  const doc = await this.exceptionModel.findById(id);
+  if (!doc) throw new BadRequestException('Exception not found');
 
-    const oldStatus = doc.status;
-    const nextStatus = dto.status;
+  const oldStatus = doc.status;
+  const nextStatus = dto.status;
 
-    if (!this.allowedTransition(oldStatus, nextStatus)) {
-      throw new BadRequestException(
-          `Invalid status transition ${oldStatus} -> ${nextStatus}`,
-      );
-    }
-
-    doc.status = nextStatus;
-    doc.updatedAt = new Date();
-
-    if (dto.reviewerId) {
-      doc.reviewedBy = new Types.ObjectId(dto.reviewerId);
-    }
-
-    if (dto.comment) {
-      doc.reviewComment = dto.comment;
-    }
-
-    await doc.save();
-
-    await this.logNotification({
-      employeeId: doc.employeeId,
-      message: `Exception ${doc._id} status changed ${oldStatus} → ${nextStatus}`,
-      type: 'EXCEPTION_STATUS_CHANGED',
-      createdAt: new Date(),
-    });
-
-    return doc.toObject();
+  if (!this.allowedTransition(oldStatus, nextStatus)) {
+    throw new BadRequestException(
+      `Invalid status transition ${oldStatus} -> ${nextStatus}`,
+    );
   }
+
+  doc.status = nextStatus;
+  doc.updatedAt = new Date();
+
+  if (dto.reviewerId) {
+    doc.reviewedBy = new Types.ObjectId(dto.reviewerId);
+  }
+
+  if (dto.comment) {
+    doc.reviewComment = dto.comment;
+  }
+
+  await doc.save();
+
+  // =====================================================
+  // 🔥 APPLY LATENESS DEDUCTION ON APPROVAL (NO SCHEMA CHANGE)
+  // =====================================================
+  if (
+    oldStatus !== TimeExceptionStatus.APPROVED &&
+    nextStatus === TimeExceptionStatus.APPROVED &&
+    doc.type === TimeExceptionType.LATE
+  ) {
+    const attendance = await this.attendanceModel.findById(
+      doc.attendanceRecordId,
+    );
+
+    if (attendance) {
+      const rule = await this.latenessRuleModel.findOne({ active: true });
+
+      if (rule && doc.reason) {
+        // Extract lateness minutes from "Late by X minutes"
+        const match = doc.reason.match(/(\d+)/);
+        const lateMinutes = match ? Number(match[1]) : 0;
+
+        const penalty =
+          lateMinutes * (rule.deductionForEachMinute ?? 0);
+
+        attendance.totalWorkMinutes = Math.max(
+          0,
+          attendance.totalWorkMinutes - penalty,
+        );
+
+        attendance.finalisedForPayroll = false;
+
+        if (!attendance.exceptionIds) {
+          attendance.exceptionIds = [];
+        }
+
+        attendance.exceptionIds.push(doc._id);
+
+        await attendance.save();
+      }
+    }
+  }
+
+  await this.logNotification({
+    employeeId: doc.employeeId,
+    message: `Exception ${doc._id} status changed ${oldStatus} → ${nextStatus}`,
+    type: 'EXCEPTION_STATUS_CHANGED',
+    createdAt: new Date(),
+  });
+
+  return doc.toObject();
+}
+
 
   private allowedTransition(from: string, to: string): boolean {
     const transitions: Record<string, string[]> = {
