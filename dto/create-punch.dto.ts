@@ -1,6 +1,15 @@
-export class CreatePunchDto {
-  employeeId?: string; // optional if using auth
-  timestamp: string;   // ISO or parsable date string
-  type?: 'IN' | 'OUT' | null; // optional — service infers if missing
-  source?: string; // e.g. "BIOMETRIC", "MOBILE"
+export class PunchDto {
+  employeeId?: string;
+
+  // ✅ what frontend sends
+  timestamp?: string;
+
+  // ✅ what frontend sends
+  type?: 'IN' | 'OUT';
+
+  // ⬇️ backward compatibility (if any old code exists)
+  time?: string;
+  punchType?: 'IN' | 'OUT';
+
+  source?: string;
 }

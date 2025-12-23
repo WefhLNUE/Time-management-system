@@ -19,34 +19,42 @@ import { Shift } from '../Models/shift.schema';
 @Injectable()
 export class AttendanceService {
   constructor(
-    @InjectModel('AttendanceRecord')
-    private readonly attendance: Model<AttendanceRecordDocument>,
+      @InjectModel('AttendanceRecord')
+      private readonly attendance: Model<AttendanceRecordDocument>,
 
-    @InjectModel(LatenessRule.name)
-    private readonly latenessRuleModel: Model<LatenessRule>,
+      @InjectModel(LatenessRule.name)
+      private readonly latenessRuleModel: Model<LatenessRule>,
 
-    @InjectModel(OvertimeRule.name)
-    private readonly overtimeRuleModel: Model<OvertimeRule>,
+      @InjectModel(OvertimeRule.name)
+      private readonly overtimeRuleModel: Model<OvertimeRule>,
 
-    @InjectModel(ShiftAssignment.name)
-    private readonly assignmentModel: Model<ShiftAssignment>,
+      @InjectModel(ShiftAssignment.name)
+      private readonly assignmentModel: Model<ShiftAssignment>,
 
-    private readonly exceptionsSvc: ExceptionsService,
+      private readonly exceptionsSvc: ExceptionsService,
   ) {}
 
   async findForEmployee(employeeId: string) {
     return this.attendance
-      .find({ employeeId })
-      .sort({ _id: -1 })
-      .lean();
+        .find({ employeeId })
+        .sort({ _id: -1 })
+        .lean();
   }
 
+  // =====================================================
+  // ✅ CORRECT PUNCH HANDLING (1970 FIXED)
+  // =====================================================
   async processPunch(dto: PunchDto) {
     const { employeeId, punchType, time } = dto;
+
     const timestamp = new Date(time);
 
-    let record: AttendanceRecordDocument | null =
-      await this.attendance.findOne({ employeeId }).sort({ _id: -1 });
+    if (isNaN(timestamp.getTime())) {
+      throw new Error('Invalid punch timestamp');
+    }
+
+    let record =
+        await this.attendance.findOne({ employeeId }).sort({ _id: -1 });
 
     if (!record || record.punches.length % 2 === 0) {
       record = await this.attendance.create({
@@ -58,7 +66,10 @@ export class AttendanceService {
       });
     }
 
-    record.punches.push({ type: punchType, time: timestamp });
+    record.punches.push({
+      type: punchType,
+      time: timestamp,
+    });
 
     const isValid = this.validateSequence(record.punches);
     if (!isValid) {
@@ -81,22 +92,16 @@ export class AttendanceService {
     const assignment = await this.getActiveAssignment(employeeId, timestamp);
     const shift = assignment?.shiftId as Shift | undefined;
 
-    // =====================
-    // LATENESS (IN)
-    // =====================
     if (punchType === 'IN' && record.punches.length === 1 && shift) {
       await this.handleLateness(employeeId, record, timestamp, shift);
     }
 
-    // =====================
-    // WORK MINUTES + OVERTIME
-    // =====================
     if (record.punches.length >= 2) {
       const firstIn = record.punches[0].time;
       const lastOut = record.punches[record.punches.length - 1].time;
 
       record.totalWorkMinutes = Math.floor(
-        (lastOut.getTime() - firstIn.getTime()) / 60000,
+          (lastOut.getTime() - firstIn.getTime()) / 60000,
       );
 
       if (punchType === 'OUT' && shift) {
@@ -117,40 +122,33 @@ export class AttendanceService {
     return true;
   }
 
-  // =========================
-  // SHIFT RESOLUTION
-  // =========================
   private async getActiveAssignment(employeeId: string, date: Date) {
     return this.assignmentModel
-      .findOne({
-        employeeId,
-        status: ShiftAssignmentStatus.APPROVED,
-        startDate: { $lte: date },
-        $or: [{ endDate: null }, { endDate: { $gte: date } }],
-      })
-      .populate('shiftId')
-      .lean();
+        .findOne({
+          employeeId,
+          status: ShiftAssignmentStatus.APPROVED,
+          startDate: { $lte: date },
+          $or: [{ endDate: null }, { endDate: { $gte: date } }],
+        })
+        .populate('shiftId')
+        .lean();
   }
 
-  // =========================
-  // LATENESS
-  // =========================
   private async handleLateness(
-    employeeId: string,
-    record: AttendanceRecordDocument,
-    actualIn: Date,
-    shift: Shift,
+      employeeId: string,
+      record: AttendanceRecordDocument,
+      actualIn: Date,
+      shift: Shift,
   ) {
     const latenessRule = await this.latenessRuleModel.findOne({ active: true });
 
     const shiftStart = this.buildTime(actualIn, shift.startTime);
-    const shiftGrace = shift.graceInMinutes ?? 0;
-    const ruleGrace = latenessRule?.gracePeriodMinutes ?? 0;
-
-    const totalGrace = shiftGrace + ruleGrace;
+    const totalGrace =
+        (shift.graceInMinutes ?? 0) +
+        (latenessRule?.gracePeriodMinutes ?? 0);
 
     const lateMinutes = Math.floor(
-      (actualIn.getTime() - shiftStart.getTime()) / 60000,
+        (actualIn.getTime() - shiftStart.getTime()) / 60000,
     );
 
     if (lateMinutes <= totalGrace) return;
@@ -164,31 +162,27 @@ export class AttendanceService {
     });
   }
 
-  // =========================
-  // OVERTIME
-  // =========================
   private async handleOvertime(
-    employeeId: string,
-    record: AttendanceRecordDocument,
-    actualOut: Date,
-    shift: Shift,
+      employeeId: string,
+      record: AttendanceRecordDocument,
+      actualOut: Date,
+      shift: Shift,
   ) {
     const overtimeRule = await this.overtimeRuleModel.findOne({ active: true });
     if (!overtimeRule) return;
 
     let shiftEnd = this.buildTime(actualOut, shift.endTime);
 
-    // overnight shift
     if (shift.endTime <= shift.startTime) {
       shiftEnd.setDate(shiftEnd.getDate() + 1);
     }
 
     shiftEnd.setMinutes(
-      shiftEnd.getMinutes() + (shift.graceOutMinutes ?? 0),
+        shiftEnd.getMinutes() + (shift.graceOutMinutes ?? 0),
     );
 
     const overtimeMinutes = Math.floor(
-      (actualOut.getTime() - shiftEnd.getTime()) / 60000,
+        (actualOut.getTime() - shiftEnd.getTime()) / 60000,
     );
 
     if (overtimeMinutes <= 0) return;
@@ -202,9 +196,6 @@ export class AttendanceService {
     });
   }
 
-  // =========================
-  // TIME PARSER
-  // =========================
   private buildTime(base: Date, time: string) {
     const [h, m] = time.split(':').map(Number);
     const d = new Date(base);
