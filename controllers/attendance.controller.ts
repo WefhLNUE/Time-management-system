@@ -27,11 +27,10 @@ type AuthUser = {
 export class AttendanceController {
   constructor(private readonly svc: AttendanceService) {}
 
-  // ✅ EMPLOYEE + HR + SYSTEM ADMIN can view own attendance
   @Roles(
       SystemRole.DEPARTMENT_EMPLOYEE,
       SystemRole.HR_ADMIN,
-      SystemRole.SYSTEM_ADMIN
+      SystemRole.SYSTEM_ADMIN,
   )
   @Get('me')
   findMyAttendance(@Req() req: Request) {
@@ -39,14 +38,12 @@ export class AttendanceController {
     return this.svc.findForEmployee(user.id);
   }
 
-  // ✅ HR / SYSTEM ADMIN view any employee
   @Roles(SystemRole.HR_ADMIN, SystemRole.SYSTEM_ADMIN)
   @Get(':employeeId')
   findForEmployee(@Param('employeeId') employeeId: string) {
     return this.svc.findForEmployee(employeeId);
   }
 
-  // ✅ EMPLOYEE + HR + SYSTEM ADMIN can punch
   @Roles(
       SystemRole.DEPARTMENT_EMPLOYEE,
       SystemRole.HR_ADMIN,
@@ -58,7 +55,7 @@ export class AttendanceController {
 
     return this.svc.processPunch({
       ...body,
-      employeeId: user.id,
+      employeeId: user.id, // enforce authenticated user
     });
   }
 }
