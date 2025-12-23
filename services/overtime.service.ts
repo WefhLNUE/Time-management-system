@@ -16,19 +16,25 @@ export class OvertimeService {
   ) {}
 
 async createRequest(dto) {
-  // 1️⃣ Ensure active overtime rule exists
+  if (!dto.attendanceRecordId) {
+    throw new BadRequestException('attendanceRecordId is required');
+  }
+
   const rule = await this.overtimeRule.findOne({ active: true });
   if (!rule) {
-    throw new BadRequestException('No active overtime rule configured');
+    throw new BadRequestException('No active overtime rule');
   }
 
-  // 2️⃣ Validate attendance record
   const rec = await this.attendance.findById(dto.attendanceRecordId);
   if (!rec) {
-    throw new NotFoundException('Attendance record not found');
+    throw new BadRequestException('Attendance record not found');
   }
 
-  // 3️⃣ Mark payroll as unfinalized
+  // Optional but correct
+  if (rec.finalisedForPayroll) {
+    throw new BadRequestException('Attendance already finalised');
+  }
+
   rec.finalisedForPayroll = false;
   await rec.save();
 
@@ -37,6 +43,7 @@ async createRequest(dto) {
     message: 'Your overtime request is submitted and awaiting manager approval',
   };
 }
+
 
   async review(id, dto) {
     if (dto.status === 'APPROVED') {

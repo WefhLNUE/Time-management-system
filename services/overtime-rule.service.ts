@@ -35,13 +35,25 @@ export class OvertimeRuleService {
   }
 
   async update(id: string, dto: UpdateOvertimeRuleDto) {
-    const updated = await this.overtimeRuleModel.findByIdAndUpdate(id, dto, {
-      new: true,
-    });
-
-    if (!updated) throw new NotFoundException('Overtime rule not found');
-    return updated;
+  const rule = await this.overtimeRuleModel.findById(id);
+  if (!rule) {
+    throw new NotFoundException('Overtime rule not found');
   }
+
+  // ✅ If activating this rule, deactivate all others
+  if (dto.active === true) {
+    await this.overtimeRuleModel.updateMany(
+      { _id: { $ne: id } },
+      { $set: { active: false } },
+    );
+  }
+
+  Object.assign(rule, dto);
+  await rule.save();
+
+  return rule;
+}
+
 
   async delete(id: string) {
     const deleted = await this.overtimeRuleModel.findByIdAndDelete(id);

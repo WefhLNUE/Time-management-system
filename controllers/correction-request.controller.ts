@@ -2,6 +2,9 @@ import {
     Body,
     Controller,
     Post,
+    Patch,
+    Param,
+    Get,
     UseGuards,
     Req,
     ForbiddenException,
@@ -24,35 +27,50 @@ type AuthUser = {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('time-management/correction-request')
 export class CorrectionRequestController {
-    constructor(private readonly svc: CorrectionRequestService) {}
+  constructor(private readonly svc: CorrectionRequestService) {}
 
-    /**
-     * EMPLOYEE / HR ADMIN / SYSTEM ADMIN
-     * submit correction request
-     */
-    @Roles(
-        SystemRole.DEPARTMENT_EMPLOYEE,
-        SystemRole.HR_ADMIN,
-        SystemRole.SYSTEM_ADMIN,
-    )
-    @Post()
-    async create(
-        @Body() dto: CorrectionRequestDto,
-        @Req() req: Request,
+  // =====================
+  // CREATE (EMPLOYEE)
+  // =====================
+  @Roles(
+    SystemRole.DEPARTMENT_EMPLOYEE,
+    SystemRole.HR_ADMIN,
+    SystemRole.SYSTEM_ADMIN,
+  )
+  @Post()
+  async create(@Body() dto: CorrectionRequestDto, @Req() req: Request) {
+    const user = req.user as AuthUser;
+
+    if (
+      user.roles.includes(SystemRole.DEPARTMENT_EMPLOYEE) &&
+      dto.employeeId !== user.id
     ) {
-        const user = req.user as AuthUser;
-
-        /**
-         * EMPLOYEE: can submit only for self
-         * HR / SYSTEM: allowed to submit for any employee
-         */
-        if (
-            user.roles.includes(SystemRole.DEPARTMENT_EMPLOYEE) &&
-            dto.employeeId !== user.id
-        ) {
-            throw new ForbiddenException('Employee mismatch');
-        }
-
-        return this.svc.create(dto);
+      throw new ForbiddenException('Employee mismatch');
     }
+
+    return this.svc.create(dto);
+  }
+
+  // =====================
+  // REVIEW (MANAGER / HR)
+  // =====================
+  @Roles(
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.HR_MANAGER,
+    SystemRole.HR_ADMIN,
+  )
+  @Get()
+  findAll() {
+    return this.svc.findAll();
+  }
+
+  @Roles(
+    SystemRole.DEPARTMENT_HEAD,
+    SystemRole.HR_MANAGER,
+    SystemRole.HR_ADMIN,
+  )
+  @Patch(':id')
+  review(@Param('id') id: string, @Body() dto: any) {
+    return this.svc.reviewRequest(id, dto);
+  }
 }
