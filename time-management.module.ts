@@ -148,6 +148,7 @@ import { CorrectionRequestService } from './services/correction-request.service'
     ReportingService,
     IntegrationService,
     PunchesService,
+    NotificationService,
   ],
 })
 export class TimeManagementModule {}
