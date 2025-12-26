@@ -27,12 +27,7 @@ export class NotificationController {
     );
   }
 
-  @Roles(
-      SystemRole.HR_ADMIN,
-      SystemRole.HR_MANAGER,
-      SystemRole.SYSTEM_ADMIN,
-
-  )
+  @Roles()
   @Patch(':id/read')
   async markAsRead(
       @Param('id') id: string,
