@@ -71,6 +71,9 @@ import { Department, DepartmentSchema }
 import { Position, PositionSchema }
   from '../organization-structure/Models/position.schema';
 
+import { Calendar, CalendarSchema }
+  from '../leaves/Models/calendar.schema';
+
   
 import { CorrectionRequestController } from './controllers/correction-request.controller';
 import { CorrectionRequestService } from './services/correction-request.service';
@@ -100,6 +103,7 @@ import { CorrectionRequestService } from './services/correction-request.service'
       { name: EmployeeProfile.name, schema: EmployeeProfileSchema },
       { name: Department.name, schema: DepartmentSchema },
       { name: Position.name, schema: PositionSchema },
+      { name: Calendar.name, schema: CalendarSchema },
     ]),
   ],
 
