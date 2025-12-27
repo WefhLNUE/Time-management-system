@@ -63,6 +63,17 @@ export class ShiftAssignmentService {
   }
 
   // ---------------------------------------
+  // DEPARTMENTS FOR ASSIGNMENT (READ ONLY)
+  // ---------------------------------------
+  async getDepartmentsForAssignment() {
+    return this.deptModel
+        .find({ isActive: true })
+        .select('_id code name')
+        .sort({ name: 1 })
+        .lean();
+  }
+
+  // ---------------------------------------
   // Overlap check
   // ---------------------------------------
   private overlaps(existing, startDate, endDate) {
@@ -77,36 +88,98 @@ export class ShiftAssignmentService {
   }
 
   // ---------------------------------------
-  // Create Assignment (PENDING)
+  // Create Assignment (EMPLOYEE or DEPARTMENT)
   // ---------------------------------------
   async create(dto: CreateShiftAssignmentDto) {
     const employeeId = this.normalizeObjectId(dto.employeeId);
+    const departmentId = this.normalizeObjectId(dto.departmentId);
     const shiftId = this.normalizeObjectId(dto.shiftId);
 
-    if (!employeeId) throw new BadRequestException('Invalid employee ID');
-    if (!shiftId) throw new BadRequestException('Invalid shift ID');
-
-    const employee = (await this.employeeModel
-        .findById(employeeId)
-        .lean()
-        .exec()) as LeanEmployee | null;
-
-    if (!employee) throw new NotFoundException('Employee not found');
-    if (employee.status !== 'ACTIVE') {
-      throw new BadRequestException('Employee is not active');
+    if (!shiftId) {
+      throw new BadRequestException('Invalid shift ID');
     }
 
-    if (
-        !Types.ObjectId.isValid(String(employee.primaryDepartmentId)) ||
-        !Types.ObjectId.isValid(String(employee.primaryPositionId))
-    ) {
+    // exactly one target
+    if (!employeeId && !departmentId) {
       throw new BadRequestException(
-          'Employee is not fully configured for assignment',
+          'Either employeeId or departmentId must be provided',
       );
     }
 
-    const existingAssignments = await this.model.find({
-      employeeId,
+    if (employeeId && departmentId) {
+      throw new BadRequestException(
+          'Provide either employeeId or departmentId, not both',
+      );
+    }
+
+    // ===============================
+    // EMPLOYEE ASSIGNMENT
+    // ===============================
+    if (employeeId) {
+      const employee = (await this.employeeModel
+          .findById(employeeId)
+          .lean()
+          .exec()) as LeanEmployee | null;
+
+      if (!employee) {
+        throw new NotFoundException('Employee not found');
+      }
+
+      if (employee.status !== 'ACTIVE') {
+        throw new BadRequestException('Employee is not active');
+      }
+
+      if (
+          !Types.ObjectId.isValid(String(employee.primaryDepartmentId)) ||
+          !Types.ObjectId.isValid(String(employee.primaryPositionId))
+      ) {
+        throw new BadRequestException(
+            'Employee is not fully configured for assignment',
+        );
+      }
+
+      const existingAssignments = await this.model.find({
+        employeeId,
+        status: {
+          $in: [
+            ShiftAssignmentStatus.PENDING,
+            ShiftAssignmentStatus.APPROVED,
+          ],
+        },
+      });
+
+      for (const ex of existingAssignments) {
+        if (this.overlaps(ex, dto.startDate, dto.endDate)) {
+          throw new BadRequestException(
+              `Overlapping assignment exists (${ex.startDate} → ${
+                  ex.endDate ?? 'open'
+              })`,
+          );
+        }
+      }
+
+      return this.model.create({
+        employeeId,
+        shiftId,
+        startDate: dto.startDate,
+        endDate: dto.endDate,
+        departmentId: employee.primaryDepartmentId,
+        positionId: employee.primaryPositionId,
+        status: ShiftAssignmentStatus.PENDING,
+      });
+    }
+
+    // ===============================
+    // DEPARTMENT ASSIGNMENT
+    // ===============================
+    const dept = await this.deptModel.findById(departmentId).lean();
+    if (!dept) {
+      throw new NotFoundException('Department not found');
+    }
+
+    const existingDeptAssignments = await this.model.find({
+      departmentId,
+      employeeId: { $exists: false },
       status: {
         $in: [
           ShiftAssignmentStatus.PENDING,
@@ -115,10 +188,10 @@ export class ShiftAssignmentService {
       },
     });
 
-    for (const ex of existingAssignments) {
+    for (const ex of existingDeptAssignments) {
       if (this.overlaps(ex, dto.startDate, dto.endDate)) {
         throw new BadRequestException(
-            `Overlapping assignment exists (${ex.startDate} → ${
+            `Overlapping department assignment exists (${ex.startDate} → ${
                 ex.endDate ?? 'open'
             })`,
         );
@@ -126,18 +199,16 @@ export class ShiftAssignmentService {
     }
 
     return this.model.create({
-      employeeId,
+      departmentId,
       shiftId,
       startDate: dto.startDate,
       endDate: dto.endDate,
-      departmentId: employee.primaryDepartmentId,
-      positionId: employee.primaryPositionId,
       status: ShiftAssignmentStatus.PENDING,
     });
   }
 
   // ---------------------------------------
-  // EMPLOYEES FOR ASSIGNMENT (FINAL FIX)
+  // EMPLOYEES FOR ASSIGNMENT
   // ---------------------------------------
   async getEmployeesForAssignment() {
     return this.employeeModel
@@ -200,7 +271,10 @@ export class ShiftAssignmentService {
         .populate(['shiftId'])
         .lean();
 
-    if (!doc) throw new NotFoundException('Assignment not found');
+    if (!doc) {
+      throw new NotFoundException('Assignment not found');
+    }
+
     return doc;
   }
 
@@ -234,7 +308,9 @@ export class ShiftAssignmentService {
   // ---------------------------------------
   async update(id: string, patch: any) {
     const existing = await this.model.findById(id);
-    if (!existing) throw new NotFoundException('Assignment not found');
+    if (!existing) {
+      throw new NotFoundException('Assignment not found');
+    }
 
     if (existing.status !== ShiftAssignmentStatus.PENDING) {
       throw new BadRequestException(
@@ -252,7 +328,9 @@ export class ShiftAssignmentService {
   // ---------------------------------------
   async approve(id: string) {
     const doc = await this.model.findById(id);
-    if (!doc) throw new NotFoundException('Assignment not found');
+    if (!doc) {
+      throw new NotFoundException('Assignment not found');
+    }
 
     if (doc.status !== ShiftAssignmentStatus.PENDING) {
       throw new BadRequestException(
@@ -275,7 +353,9 @@ export class ShiftAssignmentService {
 
   async reject(id: string) {
     const doc = await this.model.findById(id);
-    if (!doc) throw new NotFoundException('Assignment not found');
+    if (!doc) {
+      throw new NotFoundException('Assignment not found');
+    }
 
     if (doc.status !== ShiftAssignmentStatus.PENDING) {
       throw new BadRequestException(
@@ -297,38 +377,39 @@ export class ShiftAssignmentService {
   }
 
   // ---------------------------------------
-// Cancel Assignment (Soft Delete)
-// ---------------------------------------
-async cancel(id: string) {
-  if (!Types.ObjectId.isValid(id)) {
-    throw new BadRequestException('Invalid assignment ID');
+  // Cancel Assignment (Soft Delete)
+  // ---------------------------------------
+  async cancel(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid assignment ID');
+    }
+
+    const doc = await this.model.findById(id);
+    if (!doc) {
+      throw new NotFoundException('Assignment not found');
+    }
+
+    if (
+        ![
+          ShiftAssignmentStatus.PENDING,
+          ShiftAssignmentStatus.APPROVED,
+        ].includes(doc.status)
+    ) {
+      throw new BadRequestException(
+          'Only pending or approved assignments can be cancelled',
+      );
+    }
+
+    doc.status = ShiftAssignmentStatus.CANCELLED;
+    await doc.save();
+
+    if (doc.employeeId) {
+      await this.notificationSvc.createNotification(
+          doc.employeeId,
+          'Your shift assignment has been cancelled.',
+      );
+    }
+
+    return doc;
   }
-
-  const doc = await this.model.findById(id);
-  if (!doc) throw new NotFoundException('Assignment not found');
-
-  if (
-    ![
-      ShiftAssignmentStatus.PENDING,
-      ShiftAssignmentStatus.APPROVED,
-    ].includes(doc.status)
-  ) {
-    throw new BadRequestException(
-      'Only pending or approved assignments can be cancelled',
-    );
-  }
-
-  doc.status = ShiftAssignmentStatus.CANCELLED;
-  await doc.save();
-
-  if (doc.employeeId) {
-    await this.notificationSvc.createNotification(
-      doc.employeeId,
-      'Your shift assignment has been cancelled.',
-    );
-  }
-
-  return doc;
-}
-
 }

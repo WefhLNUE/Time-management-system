@@ -28,6 +28,7 @@ export enum PunchPolicy {
     MULTIPLE = 'MULTIPLE',
     FIRST_LAST = 'FIRST_LAST',
     ONLY_FIRST = 'ONLY_FIRST',
+    ALL_PUNCHES = 'ALL_PUNCHES',
 }
 
 export enum TimeExceptionType {

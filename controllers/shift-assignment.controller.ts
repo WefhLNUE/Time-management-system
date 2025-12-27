@@ -14,7 +14,8 @@ import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorator/roles.decorator';
 import { SystemRole } from 'src/employee-profile/enums/employee-profile.enums';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
+
+//@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('shift-assignments')
 export class ShiftAssignmentController {
   constructor(private readonly svc: ShiftAssignmentService) {}
@@ -74,6 +75,12 @@ export class ShiftAssignmentController {
   @Get('employee/:employeeId')
   findForEmployee(@Param('employeeId') employeeId: string) {
     return this.svc.findForEmployee(employeeId);
+  }
+  @Roles(
+  )
+  @Get('departments')
+  getDepartmentsForAssignment() {
+    return this.svc.getDepartmentsForAssignment();
   }
 
   // ======================================

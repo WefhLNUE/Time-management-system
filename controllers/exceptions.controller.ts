@@ -37,7 +37,8 @@ export class ExceptionsController {
         SystemRole.HR_MANAGER,
         SystemRole.DEPARTMENT_HEAD,
         SystemRole.SYSTEM_ADMIN,
-        SystemRole.DEPARTMENT_EMPLOYEE
+        SystemRole.DEPARTMENT_EMPLOYEE,
+        SystemRole.HR_EMPLOYEE,
   )
   @Get()
   async list(
@@ -57,7 +58,8 @@ export class ExceptionsController {
         SystemRole.DEPARTMENT_EMPLOYEE,
         SystemRole.HR_MANAGER,
         SystemRole.DEPARTMENT_HEAD,
-        SystemRole.SYSTEM_ADMIN
+        SystemRole.SYSTEM_ADMIN,
+        SystemRole.HR_EMPLOYEE,
   )
   @Get(':id')
   async get(@Param('id') id: string) {
@@ -70,7 +72,8 @@ export class ExceptionsController {
  
    @Roles(SystemRole.HR_ADMIN,
         SystemRole.DEPARTMENT_HEAD,
-        SystemRole.SYSTEM_ADMIN
+        SystemRole.SYSTEM_ADMIN,
+        SystemRole.HR_EMPLOYEE,
   )
   @Put(':id/status')
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateExceptionStatusDto) {

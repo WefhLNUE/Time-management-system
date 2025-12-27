@@ -1,11 +1,11 @@
 import {
-  Controller,
-  Post,
-  Param,
-  Get,
   Body,
-  UseGuards,
+  Controller,
+  Get,
+  Param,
+  Post,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
 
@@ -28,9 +28,11 @@ export class AttendanceController {
   constructor(private readonly svc: AttendanceService) {}
 
   @Roles(
-      SystemRole.DEPARTMENT_EMPLOYEE,
-      SystemRole.HR_ADMIN,
-      SystemRole.SYSTEM_ADMIN,
+    SystemRole.DEPARTMENT_EMPLOYEE,
+    SystemRole.HR_ADMIN,
+    SystemRole.SYSTEM_ADMIN,
+    SystemRole.HR_EMPLOYEE,
+    SystemRole.HR_MANAGER,
   )
   @Get('me')
   findMyAttendance(@Req() req: Request) {
@@ -45,9 +47,11 @@ export class AttendanceController {
   }
 
   @Roles(
-      SystemRole.DEPARTMENT_EMPLOYEE,
-      SystemRole.HR_ADMIN,
-      SystemRole.SYSTEM_ADMIN,
+    SystemRole.DEPARTMENT_EMPLOYEE,
+    SystemRole.HR_ADMIN,
+    SystemRole.SYSTEM_ADMIN,
+    SystemRole.HR_EMPLOYEE,
+    SystemRole.HR_MANAGER,
   )
   @Post('punch')
   punch(@Req() req: Request, @Body() body: PunchDto) {
